@@ -86,6 +86,9 @@ TRANSLATIONS = {
         "How long a reference price is reused": "Durée de réutilisation d'un prix de référence",
         "Good / Hot Deal (%)": "Bonne / excellente affaire (%)",
         "Discount thresholds below market": "Seuils de remise sous le prix du marché",
+        "Maximum Price Spread (%)": "Dispersion maximale des prix (%)",
+        "Above this spread the comparable listings describe different products, so no verdict is announced. Leave empty to always announce one.":
+            "Au-delà de cette dispersion, les annonces comparables décrivent des produits différents et aucun verdict n'est annoncé. Laissez vide pour toujours en annoncer un.",
         "Silent Below (%)": "Silencieux en dessous de (%)",
         "Items discounted less than this arrive without a sound. Leave empty to make every notification audible.":
             "Les articles moins remisés que ce seuil arrivent sans son. Laissez vide pour que toutes les notifications soient sonores.",

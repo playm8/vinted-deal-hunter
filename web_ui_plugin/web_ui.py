@@ -355,6 +355,10 @@ def update_config():
         "notify_silent_below", request.form.get("notify_silent_below", "")
     )
     db.set_parameter("notify_skip_below", request.form.get("notify_skip_below", ""))
+    db.set_parameter(
+        "price_reference_max_dispersion",
+        request.form.get("price_reference_max_dispersion", "80"),
+    )
 
     # Update Proxy parameters
     check_proxies = "check_proxies" in request.form

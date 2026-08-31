@@ -159,6 +159,17 @@
                                                        name="notify_silent_below" value="{{ params.notify_silent_below }}">
                                                 <small class="form-text text-muted">{{ t("Items discounted less than this arrive without a sound. Leave empty to make every notification audible.") }}</small>
                                             </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="price_reference_max_dispersion" class="form-label">{{ t("Maximum Price Spread (%)") }}</label>
+                                                        <input type="number" class="form-control" id="price_reference_max_dispersion"
+                                                               name="price_reference_max_dispersion"
+                                                               value="{{ params.price_reference_max_dispersion }}">
+                                                        <small class="form-text text-muted">{{ t("Above this spread the comparable listings describe different products, so no verdict is announced. Leave empty to always announce one.") }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">

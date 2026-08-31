@@ -467,7 +467,8 @@ def get_price_reference(cache_key, max_age_seconds):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT median_price, currency, sample_size, updated_at "
+            "SELECT median_price, currency, sample_size, updated_at, "
+            "dispersion, condition_matched "
             "FROM price_reference_cache WHERE cache_key=?",
             (cache_key,),
         )
@@ -476,7 +477,13 @@ def get_price_reference(cache_key, max_age_seconds):
             return None
         if time() - result[3] > max_age_seconds:
             return None
-        return {"median": result[0], "currency": result[1], "sample_size": result[2]}
+        return {
+            "median": result[0],
+            "currency": result[1],
+            "sample_size": result[2],
+            "dispersion": result[4],
+            "condition_matched": bool(result[5]),
+        }
     except Exception:
         print_exc()
         return None
@@ -485,19 +492,32 @@ def get_price_reference(cache_key, max_age_seconds):
             conn.close()
 
 
-def set_price_reference(cache_key, median_price, currency, sample_size):
+def set_price_reference(
+    cache_key, median_price, currency, sample_size, dispersion=0, condition_matched=False
+):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO price_reference_cache "
-            "(cache_key, median_price, currency, sample_size, updated_at) "
-            "VALUES (?, ?, ?, ?, ?) "
+            "(cache_key, median_price, currency, sample_size, updated_at, "
+            "dispersion, condition_matched) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(cache_key) DO UPDATE SET "
             "median_price=excluded.median_price, currency=excluded.currency, "
-            "sample_size=excluded.sample_size, updated_at=excluded.updated_at",
-            (cache_key, median_price, currency, sample_size, time()),
+            "sample_size=excluded.sample_size, updated_at=excluded.updated_at, "
+            "dispersion=excluded.dispersion, "
+            "condition_matched=excluded.condition_matched",
+            (
+                cache_key,
+                median_price,
+                currency,
+                sample_size,
+                time(),
+                dispersion,
+                int(condition_matched),
+            ),
         )
         conn.commit()
     except Exception:
