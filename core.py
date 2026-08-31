@@ -1,5 +1,6 @@
 import db
 import price_reference
+import re
 import requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -325,7 +326,7 @@ def _raw_amount(item, key):
         return None
 
 
-def build_item_message(item):
+def build_item_message(item, evaluation=None):
     """
     Render the notification message for an item.
 
@@ -334,6 +335,8 @@ def build_item_message(item):
 
     Args:
         item (Item): The item to build a message for.
+        evaluation (dict, optional): A price evaluation already computed for
+            this item. Passing it avoids evaluating the same item twice.
 
     Returns:
         str: The rendered message.
@@ -345,7 +348,8 @@ def build_item_message(item):
         f"{total_amount} {item.currency}" if total_amount is not None else "n/a"
     )
 
-    evaluation = price_reference.evaluate(item)
+    if evaluation is None:
+        evaluation = price_reference.evaluate(item)
 
     values = _SafeDict(
         title=escape(str(item.title or "")),
@@ -400,11 +404,22 @@ def clear_item_queue(items_queue, new_items_queue):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
             else:
+                evaluation = price_reference.evaluate(item)
+                # Items priced too far above the market are recorded but not
+                # notified, so that the feed stays quiet instead of noisy.
+                if not price_reference.should_notify(evaluation):
+                    db.update_last_timestamp(query_id, item.raw_timestamp)
+                    logger.info(
+                        f"Item {item.id} skipped, {evaluation['discount']}"
+                    )
+                    continue
                 # We create the message
-                content = build_item_message(item)
+                content = build_item_message(item, evaluation)
+                silent = price_reference.is_silent(evaluation)
                 # add the item to the queue
-                new_items_queue.put((content, item.url, "Open Vinted", None, None))
-                # new_items_queue.put((content, item.url, "Open Vinted", item.buy_url, "Open buy page"))
+                new_items_queue.put(
+                    (content, item.url, "Open Vinted", None, None, silent)
+                )
                 # Add the item to the db
                 db.add_item_to_db(
                     id=item.id,
@@ -461,6 +476,10 @@ def check_version():
 
         if response.status_code == 200:
             latest_version = response.url.split("/")[-1]
+            # A repository with no release at all redirects to the releases
+            # index page, whose last URL segment would be read as a version.
+            if not re.match(r"^v?\d", latest_version):
+                return True, ver, ver, github_url
             is_up_to_date = ver == latest_version
             return is_up_to_date, ver, latest_version, github_url
         else:

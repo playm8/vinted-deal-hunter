@@ -339,6 +339,10 @@ def update_config():
     )
     db.set_parameter("deal_threshold_good", request.form.get("deal_threshold_good", "25"))
     db.set_parameter("deal_threshold_hot", request.form.get("deal_threshold_hot", "50"))
+    db.set_parameter(
+        "notify_silent_below", request.form.get("notify_silent_below", "")
+    )
+    db.set_parameter("notify_skip_below", request.form.get("notify_skip_below", ""))
 
     # Update Proxy parameters
     check_proxies = "check_proxies" in request.form

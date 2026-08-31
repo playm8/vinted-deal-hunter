@@ -141,6 +141,26 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="notify_silent_below" class="form-label">Silent Below (%)</label>
+                                                <input type="number" class="form-control" id="notify_silent_below"
+                                                       name="notify_silent_below" value="{{ params.notify_silent_below }}">
+                                                <small class="form-text text-muted">Items discounted less than this arrive without a
+                                                    sound. Leave empty to make every notification audible.</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="notify_skip_below" class="form-label">Skip Below (%)</label>
+                                                <input type="number" class="form-control" id="notify_skip_below"
+                                                       name="notify_skip_below" value="{{ params.notify_skip_below }}">
+                                                <small class="form-text text-muted">Items discounted less than this are not notified at
+                                                    all. Leave empty to notify everything. Use 0 to drop anything above market.</small>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

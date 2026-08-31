@@ -242,6 +242,8 @@ def evaluate(item):
         "discount": "n/a",
         "deal": "❔ No reference",
         "sample_size": 0,
+        # None means "unknown", which callers must not read as "bad deal".
+        "discount_pct": None,
     }
 
     if not is_enabled():
@@ -278,7 +280,58 @@ def evaluate(item):
             "discount": f"{round(-discount):+d}% vs market",
             "deal": f"{deal} (based on {reference['sample_size']} listings)",
             "sample_size": reference["sample_size"],
+            "discount_pct": discount,
         }
     except Exception as e:
         logger.warning(f"Price evaluation failed for item {item.id}: {e}")
         return unknown
+
+
+def should_notify(evaluation):
+    """
+    Decide whether an item deserves a notification at all.
+
+    Items with no market reference are always notified: not knowing a price
+    is not a reason to hide a listing.
+
+    Args:
+        evaluation (dict): The result of evaluate().
+
+    Returns:
+        bool: True when the item must be sent.
+    """
+    discount = evaluation.get("discount_pct")
+    if discount is None:
+        return True
+    threshold = db.get_parameter("notify_skip_below")
+    if threshold in (None, ""):
+        return True
+    try:
+        return discount >= float(threshold)
+    except (TypeError, ValueError):
+        return True
+
+
+def is_silent(evaluation):
+    """
+    Decide whether a notification should arrive without a sound.
+
+    Items with no market reference stay audible, so that disabling the
+    reference engine restores the original behaviour.
+
+    Args:
+        evaluation (dict): The result of evaluate().
+
+    Returns:
+        bool: True when the notification must be silent.
+    """
+    discount = evaluation.get("discount_pct")
+    if discount is None:
+        return False
+    threshold = db.get_parameter("notify_silent_below")
+    if threshold in (None, ""):
+        return False
+    try:
+        return discount < float(threshold)
+    except (TypeError, ValueError):
+        return False

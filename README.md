@@ -83,6 +83,11 @@ all Vinted text is HTML-escaped before being sent to Telegram.
 | `price_reference_ttl_hours` | `24` | How long a reference price is cached |
 | `deal_threshold_good` | `25` | Discount (%) for ✅ |
 | `deal_threshold_hot` | `50` | Discount (%) for 🔥 |
+| `notify_silent_below` | `25` | Below this discount, the notification arrives without a sound |
+| `notify_skip_below` | *(empty)* | Below this discount, nothing is sent at all. `0` drops anything above market price |
+
+Items with no market reference are never silenced nor skipped: not knowing a price is not a reason to hide a
+listing.
 
 Each new item costs one extra catalog request, cached per
 (domain, brand, keywords, size), so a burst of similar items only queries once.
