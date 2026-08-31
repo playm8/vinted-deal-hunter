@@ -37,6 +37,44 @@ KEYWORD_RE = re.compile(r"[^\wàâäéèêëïîôöùûüÿçñ]+", re.UNICODE)
 
 MAX_KEYWORDS = 4
 
+# Vinted conditions grouped by how much they move a price. Comparing a
+# brand-new item with a worn one is what makes a reference misleading, so
+# comparables are restricted to the same group whenever there are enough.
+CONDITION_GROUPS = {
+    "new": {
+        "neuf avec étiquette", "neuf sans étiquette", "new with tags",
+        "new without tags", "nuovo con cartellino", "nuovo senza cartellino",
+        "neu mit etikett", "neu ohne etikett", "nuevo con etiqueta",
+        "nuevo sin etiqueta",
+    },
+    "good": {
+        "très bon état", "very good", "ottime condizioni", "sehr gut",
+        "muy bueno",
+    },
+    "worn": {
+        "bon état", "satisfaisant", "good", "satisfactory", "buone condizioni",
+        "discrete condizioni", "gut", "zufriedenstellend", "bueno",
+        "satisfactorio",
+    },
+}
+
+
+def condition_group(status):
+    """
+    Map a Vinted condition label to a coarse group.
+
+    Args:
+        status (str): The condition as returned by the API, any locale.
+
+    Returns:
+        str | None: "new", "good", "worn", or None when unrecognised.
+    """
+    normalised = (status or "").strip().lower()
+    for group, labels in CONDITION_GROUPS.items():
+        if normalised in labels:
+            return group
+    return None
+
 
 def _to_float(value):
     """Convert a price-ish value to float, returning None when impossible."""
@@ -138,9 +176,10 @@ def _filter_outliers(prices):
     """
     Drop listings whose price is not comparable to the rest of the sample.
 
-    Vinted searches regularly return a few unrelated items (a single sock in a
-    search for a jacket, or a bundle of ten). Anything below a fifth or above
-    five times the raw median is considered noise.
+    Vinted searches regularly return unrelated items: accessories in a search
+    for shoes, or a ten-item bundle. Prices outside 1.5 interquartile ranges
+    of the quartiles are discarded, which adapts to how spread out the sample
+    actually is instead of applying a fixed ratio.
 
     Args:
         prices (list[float]): The raw prices.
@@ -148,36 +187,79 @@ def _filter_outliers(prices):
     Returns:
         list[float]: The retained prices.
     """
-    if len(prices) < 3:
+    if len(prices) < 4:
         return prices
-    raw_median = statistics.median(prices)
-    if raw_median <= 0:
+    ordered = sorted(prices)
+    q1, q3 = (
+        statistics.median(ordered[: len(ordered) // 2]),
+        statistics.median(ordered[(len(ordered) + 1) // 2 :]),
+    )
+    spread = q3 - q1
+    if spread <= 0:
         return prices
-    return [p for p in prices if raw_median / 5 <= p <= raw_median * 5]
+    low, high = q1 - 1.5 * spread, q3 + 1.5 * spread
+    kept = [p for p in ordered if low <= p <= high]
+    return kept if len(kept) >= 3 else prices
+
+
+def _dispersion(prices, median):
+    """
+    Measure how spread out a sample is, as a percentage of its median.
+
+    A tight sample means the reference describes a real market price; a wide
+    one means the search returned a mix of different products.
+
+    Args:
+        prices (list[float]): The retained prices.
+        median (float): The sample median.
+
+    Returns:
+        float: The standard deviation over the median, in percent.
+    """
+    if len(prices) < 2 or median <= 0:
+        return 0.0
+    return statistics.pstdev(prices) / median * 100
 
 
 def get_market_reference(item, locale):
     """
     Compute the median price of listings comparable to the given item.
 
-    The result is cached per (locale, brand, keywords, size) for the number of
-    hours configured in the "price_reference_ttl_hours" parameter.
+    Comparables are restricted to the item's condition group when enough of
+    them share it, because condition moves prices more than anything else.
+    The result is cached per (locale, brand, keywords, size, condition) for
+    the number of hours configured in "price_reference_ttl_hours".
 
     Args:
         item (Item): The item to find a reference price for.
         locale (str): The Vinted domain to search on.
 
     Returns:
-        dict | None: {"median", "currency", "sample_size"} or None when no
-            reliable reference could be computed.
+        dict | None: {"median", "currency", "sample_size", "dispersion",
+            "condition_matched"} or None when no reliable reference could be
+            computed.
     """
     size = item.size_title or ""
     keywords = extract_keywords(item.title, item.brand_title, size)
-    if not keywords and not item.brand_title:
+    if not keywords:
+        # Without a single distinctive word, the search would compare the item
+        # with the brand's whole catalogue rather than with the same product.
         logger.debug(f"No usable keywords for item {item.id}, skipping reference")
         return None
 
-    cache_key = f"{locale}|{(item.brand_title or '').lower()}|{'-'.join(keywords)}|{size.lower()}"
+    group = condition_group(item.raw_data.get("status"))
+    # Keywords are sorted in the cache key only, so that two wordings of the
+    # same product ("ultra octaver uo300" and "uo300 ultra octave") share one
+    # cache entry while each still searches with its own natural word order.
+    cache_key = "|".join(
+        [
+            locale,
+            (item.brand_title or "").lower(),
+            "-".join(sorted(keywords)),
+            size.lower(),
+            group or "any",
+        ]
+    )
 
     ttl_hours = _get_float_parameter("price_reference_ttl_hours", 24)
     cached = db.get_price_reference(cache_key, ttl_hours * 3600)
@@ -194,16 +276,23 @@ def get_market_reference(item, locale):
         logger.warning(f"Could not fetch price reference for item {item.id}: {e}")
         return None
 
-    prices = []
+    all_prices, same_condition = [], []
     for comparable in comparables:
         # The item we are pricing must not price itself.
         if str(comparable.id) == str(item.id):
             continue
         price = _to_float(comparable.price)
-        if price is not None and price > 0:
-            prices.append(price)
+        if price is None or price <= 0:
+            continue
+        all_prices.append(price)
+        if group and condition_group(comparable.raw_data.get("status")) == group:
+            same_condition.append(price)
 
-    prices = _filter_outliers(prices)
+    # Same-condition comparables are better, but only when there are enough of
+    # them: a tiny sample is worse than a slightly mismatched one.
+    condition_matched = len(same_condition) >= min_samples
+    prices = _filter_outliers(same_condition if condition_matched else all_prices)
+
     if len(prices) < min_samples:
         logger.debug(
             f"Only {len(prices)} comparables for item {item.id}, "
@@ -211,13 +300,21 @@ def get_market_reference(item, locale):
         )
         return None
 
+    median = statistics.median(prices)
     reference = {
-        "median": round(statistics.median(prices), 2),
+        "median": round(median, 2),
         "currency": item.currency,
         "sample_size": len(prices),
+        "dispersion": round(_dispersion(prices, median), 1),
+        "condition_matched": condition_matched,
     }
     db.set_price_reference(
-        cache_key, reference["median"], reference["currency"], reference["sample_size"]
+        cache_key,
+        reference["median"],
+        reference["currency"],
+        reference["sample_size"],
+        reference["dispersion"],
+        reference["condition_matched"],
     )
     return reference
 
@@ -234,8 +331,8 @@ def evaluate(item):
         item (Item): The item to evaluate.
 
     Returns:
-        dict: {"market_price", "discount", "deal", "sample_size"} as
-            display-ready strings.
+        dict: {"market_price", "discount", "deal", "sample_size",
+            "discount_pct"} as display-ready values.
     """
     unknown = {
         "market_price": "n/a",
@@ -260,6 +357,22 @@ def evaluate(item):
         if price is None or median <= 0:
             return unknown
 
+        # A sample spread this wide describes several different products, not
+        # one market price, so no verdict is announced from it.
+        dispersion = reference.get("dispersion") or 0
+        max_dispersion = _get_float_parameter("price_reference_max_dispersion", 80)
+        if max_dispersion and dispersion > max_dispersion:
+            logger.debug(
+                f"Reference for item {item.id} too scattered "
+                f"({dispersion:.0f}%), no verdict"
+            )
+            return {
+                **unknown,
+                "market_price": f"{median:.2f} {reference['currency']}",
+                "deal": f"❔ Unreliable reference (prices vary by {dispersion:.0f}%)",
+                "sample_size": reference["sample_size"],
+            }
+
         # Positive means the item is cheaper than the market reference.
         discount = (median - price) / median * 100
         hot = _get_float_parameter("deal_threshold_hot", 50)
@@ -274,11 +387,12 @@ def evaluate(item):
         else:
             deal = "⚠️ Above market price"
 
+        basis = "same condition" if reference.get("condition_matched") else "all conditions"
         return {
             "market_price": f"{median:.2f} {reference['currency']}",
             # round() first so that a negligible gap never renders as "-0%".
             "discount": f"{round(-discount):+d}% vs market",
-            "deal": f"{deal} (based on {reference['sample_size']} listings)",
+            "deal": f"{deal} ({reference['sample_size']} listings, {basis})",
             "sample_size": reference["sample_size"],
             "discount_pct": discount,
         }

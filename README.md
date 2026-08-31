@@ -92,8 +92,13 @@ showing a placeholder. Adding a language means adding one entry to
 | `price_reference_ttl_hours` | `24` | How long a reference price is cached |
 | `deal_threshold_good` | `25` | Discount (%) for ✅ |
 | `deal_threshold_hot` | `50` | Discount (%) for 🔥 |
+| `price_reference_max_dispersion` | `80` | Above this price spread, no verdict is announced |
 | `notify_silent_below` | `25` | Below this discount, the notification arrives without a sound |
 | `notify_skip_below` | *(empty)* | Below this discount, nothing is sent at all. `0` drops anything above market price |
+
+Comparables are restricted to the item's condition group whenever enough of them share it, prices outside 1.5
+interquartile ranges are discarded as unrelated products, and a reference whose prices are too scattered announces no
+verdict at all rather than a misleading one.
 
 Items with no market reference are never silenced nor skipped: not knowing a price is not a reason to hide a
 listing.
