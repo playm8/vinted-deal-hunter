@@ -323,6 +323,23 @@ def update_config():
     )
     db.set_parameter("banwords", request.form.get("banwords", ""))
 
+    # Update Deal Detection parameters
+    price_reference_enabled = "price_reference_enabled" in request.form
+    db.set_parameter("price_reference_enabled", str(price_reference_enabled))
+    db.set_parameter(
+        "price_reference_sample_size",
+        request.form.get("price_reference_sample_size", "20"),
+    )
+    db.set_parameter(
+        "price_reference_min_samples",
+        request.form.get("price_reference_min_samples", "5"),
+    )
+    db.set_parameter(
+        "price_reference_ttl_hours", request.form.get("price_reference_ttl_hours", "24")
+    )
+    db.set_parameter("deal_threshold_good", request.form.get("deal_threshold_good", "25"))
+    db.set_parameter("deal_threshold_hot", request.form.get("deal_threshold_hot", "50"))
+
     # Update Proxy parameters
     check_proxies = "check_proxies" in request.form
     db.set_parameter("check_proxies", str(check_proxies))

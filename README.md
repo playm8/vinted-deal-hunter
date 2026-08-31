@@ -7,6 +7,54 @@ when items matching your search criteria are posted.
 
 ---
 
+## Deal detection (fork addition)
+
+Vinted exposes no retail price, so this fork builds a **market reference** from
+Vinted itself: for every new item, it searches the catalog for comparable
+listings (same brand, same significant title keywords, same size), takes the
+**median** of their prices and compares it with the item price.
+
+The notification then shows whether the listing is worth it:
+
+```
+🆕 Air max 95 bianche
+💶 60.0 EUR  (total 63.7 EUR)
+📊 Market ref : 106.50 EUR  (-44% vs market)
+✅ Good deal (based on 18 listings)
+🛍️ Nike · 📏 44 · ✨ Neuf sans étiquette
+❤️ 26  👁️ 0
+```
+
+### New message template variables
+
+| Variable | Description |
+| --- | --- |
+| `{total_price}` | Price including the buyer protection fee |
+| `{status}` | Condition declared by the seller (e.g. "Neuf avec étiquette") |
+| `{size}` | Item size |
+| `{favourites}` / `{views}` | Engagement counters |
+| `{url}` | Item URL |
+| `{market_price}` | Median price of comparable listings |
+| `{discount}` | Gap with the market reference (positive means more expensive) |
+| `{deal}` | Verdict: 🔥 excellent, ✅ good, ➖ fair, ⚠️ above market |
+
+Unknown placeholders are left as-is instead of breaking the notification, and
+all Vinted text is HTML-escaped before being sent to Telegram.
+
+### Settings (Configuration → Deal Detection)
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `price_reference_enabled` | `True` | Turn the feature off to keep the original behaviour |
+| `price_reference_sample_size` | `20` | Listings fetched per comparison |
+| `price_reference_min_samples` | `5` | Below this, no reference is shown |
+| `price_reference_ttl_hours` | `24` | How long a reference price is cached |
+| `deal_threshold_good` | `25` | Discount (%) for ✅ |
+| `deal_threshold_hot` | `50` | Discount (%) for 🔥 |
+
+Each new item costs one extra catalog request, cached per
+(domain, brand, keywords, size), so a burst of similar items only queries once.
+
 ## ⚡ Quickstart
 
 If you just want to get started fast with Docker Compose:
