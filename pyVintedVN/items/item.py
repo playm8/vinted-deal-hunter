@@ -81,16 +81,19 @@ class Item:
         """
         return hash(("id", self.id))
 
-    def is_new_item(self, minutes=20):
+    def is_new_item(self, minutes=240):
         """
         Check if this item is newly listed.
 
         An item is considered new if it was created within the specified
-        number of minutes from the current time.
+        number of minutes from the current time. The timestamp comes from the
+        item photo, and Vinted publishes an item in its search results well
+        after that: the window must stay above that indexing delay, which has
+        been observed above one hour.
 
         Args:
-            minutes (int, optional): The number of minutes to consider an item as new.
-                Defaults to 5.
+            minutes (int, optional): The number of minutes to consider an item
+                as new. Defaults to 240.
 
         Returns:
             bool: True if the item is new, False otherwise.

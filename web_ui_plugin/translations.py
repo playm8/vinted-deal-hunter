@@ -70,6 +70,9 @@ TRANSLATIONS = {
         "Delay between query refreshes in seconds":
             "Délai entre deux rafraîchissements, en secondes",
         "Banwords": "Mots exclus",
+        "Maximum Item Age (minutes)": "Âge maximum des articles (minutes)",
+        "Ignore items older than this. Vinted publishes an item in its search results long after the timestamp it carries, so a window under two hours can drop every item.":
+            "Ignorer les articles plus anciens que cette durée. Vinted publie un article dans ses résultats de recherche bien après l'horodatage qu'il porte : une fenêtre inférieure à deux heures peut écarter tous les articles.",
         "Words to filter out from item titles. Items with these words in their titles will be ignored.":
             "Mots à exclure des titres d'articles. Les articles contenant ces mots seront ignorés.",
         "Enter a word to ban": "Saisissez un mot à exclure",
