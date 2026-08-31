@@ -4,3 +4,9 @@ vinted.db
 /__pycache__
 /logs/vinted.log
 /vinted_notifications.db
+
+# runtime state, never versioned
+/data/
+/logs/
+__pycache__/
+*.pyc
