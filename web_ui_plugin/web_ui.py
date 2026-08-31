@@ -6,6 +6,7 @@ import re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from logger import get_logger
+from web_ui_plugin.translations import LANGUAGES, js_translations, translate
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -18,6 +19,16 @@ app = Flask(
     ),
     static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"),
 )
+
+
+@app.context_processor
+def inject_translations():
+    """Make the translation helper and language list available to templates."""
+    return {
+        "t": translate,
+        "languages": LANGUAGES,
+        "js_strings": js_translations(),
+    }
 
 # Secret key for session management
 app.secret_key = os.urandom(24)
@@ -179,11 +190,11 @@ def add_query():
             query, name=query_name if query_name != "" else None
         )
         if is_new_query:
-            flash(f"Query added: {query}", "success")
+            flash(f'{translate("Query added")}: {query}', "success")
         else:
             flash(message, "warning")
     else:
-        flash("No query provided", "error")
+        flash(translate("No query provided"), "error")
 
     return redirect(url_for("queries"))
 
@@ -192,7 +203,7 @@ def add_query():
 def remove_query(query_id):
     message, success = core.process_remove_query(str(query_id))
     if success:
-        flash("Query removed", "success")
+        flash(translate("Query removed"), "success")
     else:
         flash(message, "error")
 
@@ -203,7 +214,7 @@ def remove_query(query_id):
 def remove_all_queries():
     message, success = core.process_remove_query("all")
     if success:
-        flash("All queries removed", "success")
+        flash(translate("All queries removed"), "success")
     else:
         flash(message, "error")
 
@@ -220,11 +231,11 @@ def update_query(query_id):
             query_id, query, name=query_name if query_name != "" else None
         )
         if success:
-            flash("Query updated", "success")
+            flash(translate("Query updated"), "success")
         else:
             flash(message, "error")
     else:
-        flash("No query provided", "error")
+        flash(translate("No query provided"), "error")
 
     return redirect(url_for("queries"))
 
@@ -317,6 +328,7 @@ def update_config():
     db.set_parameter("rss_max_items", request.form.get("rss_max_items", "100"))
 
     # Update System parameters
+    db.set_parameter("ui_language", request.form.get("ui_language", "en"))
     db.set_parameter("items_per_query", request.form.get("items_per_query", "20"))
     db.set_parameter(
         "query_refresh_delay", request.form.get("query_refresh_delay", "60")
@@ -359,7 +371,7 @@ def update_config():
     db.set_parameter("last_proxy_check_time", "1")
     logger.info("Proxy settings updated, cache reset")
 
-    flash("Configuration updated", "success")
+    flash(translate("Configuration updated"), "success")
     return redirect(url_for("config"))
 
 
@@ -463,7 +475,7 @@ def add_country():
         message, country_list = core.process_add_country(country)
         flash(message, "success" if "added" in message else "warning")
     else:
-        flash("No country provided", "error")
+        flash(translate("No country provided"), "error")
 
     return redirect(url_for("allowlist"))
 
@@ -479,7 +491,7 @@ def remove_country(country):
 @app.route("/clear_allowlist", methods=["POST"])
 def clear_allowlist():
     db.clear_allowlist()
-    flash("Allowlist cleared", "success")
+    flash(translate("Allowlist cleared"), "success")
 
     return redirect(url_for("allowlist"))
 

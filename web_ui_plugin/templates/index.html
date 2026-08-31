@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Vinted Notifications{% endblock %}
+{% block title %}{{ t("Dashboard") }} - Vinted Deal Hunter{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Dashboard</h1>
+    <h1 class="h2">{{ t("Dashboard") }}</h1>
 </div>
 
 <!-- Statistics Section -->
@@ -15,9 +15,9 @@
                 <div class="d-flex align-items-center justify-content-center mb-3">
                     <i class="bi bi-box-seam text-primary" style="font-size: 2rem;"></i>
                 </div>
-                <h5 class="card-title">Total Items</h5>
+                <h5 class="card-title">{{ t("Total Items") }}</h5>
                 <h2 class="display-4 fw-bold text-primary">{{ stats.total_items }}</h2>
-                <p class="card-text text-muted">Items grabbed for monitored queries so far</p>
+                <p class="card-text text-muted">{{ t("Items grabbed for monitored queries so far") }}</p>
             </div>
         </div>
     </div>
@@ -27,9 +27,9 @@
                 <div class="d-flex align-items-center justify-content-center mb-3">
                     <i class="bi bi-search text-success" style="font-size: 2rem;"></i>
                 </div>
-                <h5 class="card-title">Active Queries</h5>
+                <h5 class="card-title">{{ t("Active Queries") }}</h5>
                 <h2 class="display-4 fw-bold text-success">{{ stats.total_queries }}</h2>
-                <p class="card-text text-muted">Queries being monitored</p>
+                <p class="card-text text-muted">{{ t("Queries being monitored") }}</p>
             </div>
         </div>
     </div>
@@ -39,9 +39,9 @@
                 <div class="d-flex align-items-center justify-content-center mb-3">
                     <i class="bi bi-bar-chart-fill text-warning" style="font-size: 2rem;"></i>
                 </div>
-                <h5 class="card-title">Items per Day</h5>
+                <h5 class="card-title">{{ t("Items per Day") }}</h5>
                 <h2 class="display-4 fw-bold text-warning">{{ stats.items_per_day }}</h2>
-                <p class="card-text text-muted">Average items found daily</p>
+                <p class="card-text text-muted">{{ t("Average items found daily") }}</p>
             </div>
         </div>
     </div>
@@ -51,7 +51,7 @@
                 <div class="d-flex align-items-center justify-content-center mb-3">
                     <i class="bi bi-clock-history text-info" style="font-size: 2rem;"></i>
                 </div>
-                <h5 class="card-title">Last Found Item</h5>
+                <h5 class="card-title">{{ t("Last Found Item") }}</h5>
                 {% if stats.last_item %}
                 <div class="d-flex align-items-center justify-content-center">
                     {% if stats.last_item.photo_url %}
@@ -74,13 +74,13 @@
                         <div class="mt-1">
                             <a href="{{ stats.last_item.url }}" target="_blank"
                                class="btn btn-sm btn-outline-info">
-                                <i class="bi bi-box-arrow-up-right"></i> View
+                                <i class="bi bi-box-arrow-up-right"></i> {{ t("View") }}
                             </a>
                         </div>
                     </div>
                 </div>
                 {% else %}
-                <p class="text-muted">No items found yet</p>
+                <p class="text-muted">{{ t("No items found yet") }}</p>
                 {% endif %}
             </div>
         </div>
@@ -92,26 +92,26 @@
         <div class="card">
             <div class="card-header d-flex align-items-center">
                 <i class="bi bi-speedometer2 me-2 text-info"></i>
-                <h5 class="card-title mb-0">Process Status</h5>
+                <h5 class="card-title mb-0">{{ t("Process Status") }}</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h6 class="mb-0">Telegram Bot</h6>
-                                <small class="text-muted">{{ 'Running' if telegram_running else 'Stopped' }}</small>
+                                <h6 class="mb-0">{{ t("Telegram Bot") }}</h6>
+                                <small class="text-muted">{{ t('Running') if telegram_running else t('Stopped') }}</small>
                             </div>
                             <div>
                                 {% if telegram_running %}
                                 <button class="btn btn-sm btn-danger process-control" data-process="telegram"
                                         data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
+                                    <i class="bi bi-stop-fill"></i> {{ t("Stop") }}
                                 </button>
                                 {% else %}
                                 <button class="btn btn-sm btn-success process-control" data-process="telegram"
                                         data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
+                                    <i class="bi bi-play-fill"></i> {{ t("Start") }}
                                 </button>
                                 {% endif %}
                             </div>
@@ -120,13 +120,13 @@
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h6 class="mb-0">RSS Feed</h6>
+                                <h6 class="mb-0">{{ t("RSS Feed") }}</h6>
                                 <small class="text-muted">
                                     {% if rss_running %}
-                                    <a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{
+                                    <a href="http://localhost:{{ params.rss_port }}/" target="_blank">{{ t("Running on port") }} {{
                                         params.rss_port }}</a>
                                     {% else %}
-                                    Stopped
+                                    {{ t("Stopped") }}
                                     {% endif %}
                                 </small>
                             </div>
@@ -134,12 +134,12 @@
                                 {% if rss_running %}
                                 <button class="btn btn-sm btn-danger process-control" data-process="rss"
                                         data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
+                                    <i class="bi bi-stop-fill"></i> {{ t("Stop") }}
                                 </button>
                                 {% else %}
                                 <button class="btn btn-sm btn-success process-control" data-process="rss"
                                         data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
+                                    <i class="bi bi-play-fill"></i> {{ t("Start") }}
                                 </button>
                                 {% endif %}
                             </div>
@@ -157,18 +157,18 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <i class="bi bi-box me-2 text-info"></i>
-                    <h5 class="card-title mb-0">Recent Items</h5>
+                    <h5 class="card-title mb-0">{{ t("Recent Items") }}</h5>
                 </div>
                 <div class="d-flex align-items-center">
-                    <div class="btn-group me-2" role="group" aria-label="View toggle">
+                    <div class="btn-group me-2" role="group" aria-label="{{ t("View toggle") }}">
                         <button type="button" class="btn btn-sm btn-outline-secondary" id="cardViewBtn">
-                            <i class="bi bi-grid-3x3-gap-fill"></i> Cards
+                            <i class="bi bi-grid-3x3-gap-fill"></i> {{ t("Cards") }}
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" id="listViewBtn">
-                            <i class="bi bi-list-ul"></i> List
+                            <i class="bi bi-list-ul"></i> {{ t("List") }}
                         </button>
                     </div>
-                    <a href="/items" class="btn btn-sm btn-outline-primary">View All</a>
+                    <a href="/items" class="btn btn-sm btn-outline-primary">{{ t("View All") }}</a>
                 </div>
             </div>
             <div class="card-body">
@@ -197,14 +197,14 @@
                             <div class="card-footer bg-white p-2">
                                 <a href="{{ item.url }}" target="_blank"
                                    class="btn btn-sm btn-primary w-100">
-                                    <i class="bi bi-box-arrow-up-right"></i> View
+                                    <i class="bi bi-box-arrow-up-right"></i> {{ t("View") }}
                                 </a>
                             </div>
                         </div>
                     </div>
                     {% else %}
                     <div class="col-12 text-center py-5">
-                        <p class="text-muted">No items found</p>
+                        <p class="text-muted">{{ t("No items found") }}</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -214,11 +214,11 @@
                     <table class="table table-hover mb-0">
                         <thead>
                         <tr>
-                            <th>Image</th>
-                            <th>Title</th>
-                            <th>Price</th>
-                            <th>Timestamp</th>
-                            <th>Actions</th>
+                            <th>{{ t("Image") }}</th>
+                            <th>{{ t("Title") }}</th>
+                            <th>{{ t("Price") }}</th>
+                            <th>{{ t("Timestamp") }}</th>
+                            <th>{{ t("Actions") }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -241,13 +241,13 @@
                             <td>
                                 <a href="{{ item.url }}" target="_blank"
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-box-arrow-up-right"></i> View
+                                    <i class="bi bi-box-arrow-up-right"></i> {{ t("View") }}
                                 </a>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="text-center">No items found</td>
+                            <td colspan="5" class="text-center">{{ t("No items found") }}</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -261,9 +261,9 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <i class="bi bi-search me-2 text-info"></i>
-                    <h5 class="card-title mb-0">Queries</h5>
+                    <h5 class="card-title mb-0">{{ t("Queries") }}</h5>
                 </div>
-                <a href="/queries" class="btn btn-sm btn-outline-primary">Manage</a>
+                <a href="/queries" class="btn btn-sm btn-outline-primary">{{ t("Manage") }}</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -271,8 +271,8 @@
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Query</th>
-                            <th>Last Found Item</th>
+                            <th>{{ t("Query") }}</th>
+                            <th>{{ t("Last Found Item") }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -284,7 +284,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="text-center">No queries found</td>
+                            <td colspan="3" class="text-center">{{ t("No queries found") }}</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -352,9 +352,9 @@
 
                                 // Update status text for RSS feed with hyperlink
                                 if (process === 'rss') {
-                                    statusContainer.innerHTML = '<a href="http://localhost:{{ params.rss_port }}/" target="_blank">Running on port {{ params.rss_port }}</a>';
+                                    statusContainer.innerHTML = '<a href="http://localhost:{{ params.rss_port }}/" target="_blank">' + t('Running on port') + ' {{ params.rss_port }}</a>';
                                 } else {
-                                    statusContainer.textContent = 'Running';
+                                    statusContainer.textContent = t('Running');
                                 }
                             } else if (action === 'stop') {
                                 // Change button to Start
@@ -363,7 +363,7 @@
                                 this.innerHTML = '<i class="bi bi-play-fill"></i> Start';
 
                                 // Update status text
-                                statusContainer.textContent = 'Stopped';
+                                statusContainer.textContent = t('Stopped');
                             }
                         }
 

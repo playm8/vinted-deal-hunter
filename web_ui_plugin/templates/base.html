@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Vinted Notifications{% endblock %}</title>
+    <title>{% block title %}Vinted Deal Hunter{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
@@ -143,11 +143,11 @@
 <header class="navbar navbar-dark sticky-top app-header flex-md-nowrap p-0 shadow">
     <div class="container-fluid">
         <a class="navbar-brand col-md-2 col-lg-2 me-0" href="/">
-            <i class="bi bi-bell-fill me-2"></i>Vinted Notifications
+            <i class="bi bi-bell-fill me-2"></i>Vinted Deal Hunter
         </a>
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
                 data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
-                aria-label="Toggle navigation">
+                aria-label="{{ t("Toggle navigation") }}">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="d-flex ms-auto me-3 align-items-center">
@@ -178,32 +178,32 @@
                 <ul class="nav flex-column px-2">
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
-                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                            <i class="bi bi-speedometer2 me-2"></i> {{ t("Dashboard") }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/queries' %}active{% endif %}" href="/queries">
-                            <i class="bi bi-search me-2"></i> Queries
+                            <i class="bi bi-search me-2"></i> {{ t("Queries") }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/items' %}active{% endif %}" href="/items">
-                            <i class="bi bi-box me-2"></i> Items
+                            <i class="bi bi-box me-2"></i> {{ t("Items") }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/allowlist' %}active{% endif %}" href="/allowlist">
-                            <i class="bi bi-globe me-2"></i> Allowlist
+                            <i class="bi bi-globe me-2"></i> {{ t("Allowlist") }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/config' %}active{% endif %}" href="/config">
-                            <i class="bi bi-gear me-2"></i> Configuration
+                            <i class="bi bi-gear me-2"></i> {{ t("Configuration") }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/logs' %}active{% endif %}" href="/logs">
-                            <i class="bi bi-journal-text me-2"></i> Logs
+                            <i class="bi bi-journal-text me-2"></i> {{ t("Logs") }}
                         </a>
                     </li>
                 </ul>
@@ -222,7 +222,7 @@
     {% for category, message in messages %}
     <div class="alert alert-{{ category }} alert-dismissible fade show flash-message" role="alert">
         {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t("Close") }}"></button>
     </div>
     {% endfor %}
     {% endif %}
@@ -235,23 +235,23 @@
             <div class="col-md-4">
                 <p class="mb-1 d-flex align-items-center">
                     <i class="bi bi-bell-fill me-2 text-info"></i>
-                    <strong class="text-info">Vinted Notifications</strong>
+                    <strong class="text-info">Vinted Deal Hunter</strong>
                     <span class="badge bg-secondary ms-2">v{{ current_version }}</span>
                 </p>
                 <p class="text-muted small mb-0">
                     &copy; {{ current_year }} <a href="{{ github_url }}" target="_blank"
-                                                 class="text-decoration-none text-info">Vinted Notifications</a>
+                                                 class="text-decoration-none text-info">Vinted Deal Hunter</a>
                 </p>
             </div>
             <div class="col-md-4 text-center d-flex flex-column justify-content-center h-100">
                 <p class="mb-1">
                     <a href="{{ github_url }}/issues" target="_blank" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-bug me-1"></i> Report an issue
+                        <i class="bi bi-bug me-1"></i> {{ t("Report an issue") }}
                     </a>
                 </p>
                 <p class="text-muted small mb-0">
                     <a href="{{ github_url }}#readme" target="_blank" class="text-decoration-none">
-                        <i class="bi bi-book me-1"></i> Documentation
+                        <i class="bi bi-book me-1"></i> {{ t("Documentation") }}
                     </a>
                 </p>
             </div>
@@ -265,7 +265,7 @@
                 {% if is_up_to_date is defined %}
                 <p class="text-muted small mb-0">
                     {% if is_up_to_date %}
-                    <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Up to date</span>
+                    <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> {{ t("Up to date") }}</span>
                     {% else %}
                     <a href="{{ github_url }}/releases" target="_blank"
                        class="badge bg-warning text-dark text-decoration-none"><i
@@ -292,5 +292,12 @@
     });
 </script>
 {% block scripts %}{% endblock %}
+<script>
+    // Strings the scripts below need at runtime, translated server-side.
+    const I18N = {{ js_strings | tojson }};
+    function t(text) {
+        return I18N[text] || text;
+    }
+</script>
 </body>
 </html>

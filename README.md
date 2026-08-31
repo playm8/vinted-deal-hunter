@@ -73,6 +73,15 @@ The notification then shows whether the listing is worth it:
 Unknown placeholders are left as-is instead of breaking the notification, and
 all Vinted text is HTML-escaped before being sent to Telegram.
 
+### Interface language
+
+The web interface is available in English and French, switchable from
+Configuration → System Settings → Language. English strings are used as
+translation keys, so an untranslated string falls back to English instead of
+showing a placeholder. Adding a language means adding one entry to
+`LANGUAGES` and one dictionary to `TRANSLATIONS` in
+`web_ui_plugin/translations.py`; nothing else has to change.
+
 ### Settings (Configuration → Deal Detection)
 
 | Parameter | Default | Description |
