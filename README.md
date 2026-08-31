@@ -1,15 +1,47 @@
-# Vinted-Notifications
+# Vinted Deal Hunter
 
 A real-time notification system for Vinted listings that works across all Vinted country domains. Get instant alerts
-when items matching your search criteria are posted.
+when items matching your search criteria are posted, and know straight away whether the price is worth it.
+
+Vinted exposes no retail price, so this project builds a **market reference** from Vinted itself and scores every
+listing against it. See [Deal Detection](#-deal-detection).
+
+> Fork of [Fuyucch1/Vinted-Notifications](https://github.com/Fuyucch1/Vinted-Notifications), extended with market
+> price references and deal scoring.
 
 ![Vinted-Notifications](https://github.com/user-attachments/assets/f2788511-5a8a-4a8d-8198-a4135081a3d8)
 
 ---
 
-## Deal detection (fork addition)
+## ⚡ Quickstart
 
-Vinted exposes no retail price, so this fork builds a **market reference** from
+If you just want to get started fast with Docker Compose:
+
+```bash
+git clone https://github.com/playm8/vinted-deal-hunter.git
+cd vinted-deal-hunter
+docker compose up -d --build
+```
+
+Then open [http://localhost:8000](http://localhost:8000) in your browser.
+
+---
+
+## 📋 Features
+
+- **Web UI**: Manage everything through an intuitive web interface
+- **Multi-Country Support**: Works on all Vinted domains regardless of country
+- **Real-Time Notifications**: Get instant alerts for new listings
+- **Multiple Search Queries**: Monitor multiple search terms simultaneously
+- **Country Filtering**: Filter items by seller's country of origin
+- **RSS Feed**: Subscribe to your search results with any RSS reader
+- **Telegram Integration**: Receive notifications directly in Telegram
+
+---
+
+## 💰 Deal Detection
+
+Vinted exposes no retail price, so the **market reference** is built from
 Vinted itself: for every new item, it searches the catalog for comparable
 listings (same brand, same significant title keywords, same size), takes the
 **median** of their prices and compares it with the item price.
@@ -55,45 +87,57 @@ all Vinted text is HTML-escaped before being sent to Telegram.
 Each new item costs one extra catalog request, cached per
 (domain, brand, keywords, size), so a burst of similar items only queries once.
 
-## ⚡ Quickstart
-
-If you just want to get started fast with Docker Compose:
-
-```bash
-curl -O https://raw.githubusercontent.com/Fuyucch1/Vinted-Notifications/main/docker-compose.yml
-docker-compose up -d
-```
-
-Then open [http://localhost:8000](http://localhost:8000) in your browser.
-
----
-
-## 📋 Features
-
-- **Web UI**: Manage everything through an intuitive web interface
-- **Multi-Country Support**: Works on all Vinted domains regardless of country
-- **Real-Time Notifications**: Get instant alerts for new listings
-- **Multiple Search Queries**: Monitor multiple search terms simultaneously
-- **Country Filtering**: Filter items by seller's country of origin
-- **RSS Feed**: Subscribe to your search results with any RSS reader
-- **Telegram Integration**: Receive notifications directly in Telegram
-
 ---
 
 ## 📦 Installation
 
-### Option 1: Docker Run (Simplest)
+### Option 1: Docker Compose (Recommended)
+
+#### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- Telegram bot token (for Telegram notifications)
+
+#### Setup
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/playm8/vinted-deal-hunter.git
+   cd vinted-deal-hunter
+   ```
+
+2. **Build and start the container**
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   The shipped `docker-compose.yml` builds the image from these sources. There is no prebuilt image on Docker Hub:
+   the deal detection lives in this repository, so the image has to be built from it.
+
+   > **Note**: The compose file uses named volumes (`VN_data` and `VN_logs`) managed by Docker, so your database and
+   logs survive a container removal or rebuild.
+
+3. **Access the Web UI**
+
+   Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
+
+### Option 2: Docker Run
 
 #### Prerequisites
 
 - Docker installed on your system
 - Telegram bot token (for Telegram notifications)
 
-#### Setup with Docker Run
+#### Setup
 
-1. **Create directories for persistent data**
+1. **Build the image and create directories for persistent data**
 
    ```bash
+   git clone https://github.com/playm8/vinted-deal-hunter.git
+   cd vinted-deal-hunter
+   docker build -t vinted-deal-hunter .
    mkdir -p data logs
    ```
 
@@ -101,64 +145,17 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
    ```bash
    docker run -d \
-     --name vinted-notifications \
+     --name vinted-deal-hunter \
      -p 8000:8000 \
      -p 8080:8080 \
      -v "$(pwd)/data:/app/data" \
      -v "$(pwd)/logs:/app/logs" \
      --restart unless-stopped \
-     fuyucch1/vinted-notifications:latest
+     vinted-deal-hunter
    ```
 
    > **Note**: The volume mounts ensure your data and logs are preserved even if the container is removed or updated.
    The database is stored in the `data` directory, and logs are stored in the `logs` directory.
-
-3. **Access the Web UI**
-
-   Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
-
-### Option 2: Docker Compose (Recommended)
-
-#### Prerequisites
-
-- Docker and Docker Compose installed on your system
-- Telegram bot token (for Telegram notifications)
-
-#### Setup with Docker Compose
-
-1. **Create a docker-compose.yml file**
-
-   ```yaml
-   version: '3.8'
-
-   services:
-     vinted-notifications:
-       image: fuyucch1/vinted-notifications:latest
-       pull_policy: always
-       ports:
-         - "8000:8000"
-         - "8080:8080"
-       volumes:
-         - VN_data:/app/data
-         - VN_logs:/app/logs
-       restart: unless-stopped
-       read_only: true
-       tmpfs:
-         - /tmp
-
-   volumes:
-     VN_data:
-     VN_logs:
-   ```
-
-   > **Note**: This configuration uses named volumes (`VN_data` and `VN_logs`) which are managed by Docker. This ensures
-   your data and logs are preserved even if the container is removed or updated.
-
-2. **Start the container**
-
-   ```bash
-   docker-compose up -d
-   ```
 
 3. **Access the Web UI**
 
@@ -173,15 +170,12 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
 
 #### Setup
 
-1. **Clone the repository or download the latest release**
+1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/Fuyucch1/Vinted-Notifications.git
-   cd Vinted-Notifications
+   git clone https://github.com/playm8/vinted-deal-hunter.git
+   cd vinted-deal-hunter
    ```
-
-   Alternatively, download the [latest release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest) and
-   extract it.
 
 2. **Install dependencies**
 
@@ -202,6 +196,8 @@ Then open [http://localhost:8000](http://localhost:8000) in your browser.
    ```
 
    Once started, access the Web UI at [http://localhost:8000](http://localhost:8000) to complete the setup.
+
+---
 
 ## 🚀 Usage
 
@@ -269,53 +265,33 @@ MESSAGE = '''\
 
 ## 🔄 Updating
 
-### Option 1: Docker Run
+Database migrations run automatically on startup, so an update never requires manual SQL. Your database lives in a
+volume (or in `data/`) and is left untouched by a rebuild.
 
-1. Pull the latest image:
-   ```bash
-   docker pull fuyucch1/vinted-notifications:latest
-   ```
-2. Stop and remove the existing container:
-   ```bash
-   docker stop vinted-notifications
-   docker rm vinted-notifications
-   ```
-3. Run the container again with the same command as in the installation section:
-   ```bash
-   docker run -d \
-     --name vinted-notifications \
-     -p 8000:8000 \
-     -p 8080:8080 \
-     -v "$(pwd)/data:/app/data" \
-     -v "$(pwd)/logs:/app/logs" \
-     --restart unless-stopped \
-     fuyucch1/vinted-notifications:latest
-   ```
+### Docker Compose
 
-   > **Important**: This update method preserves your data because of the volume mounts. Your database and logs will be
-   maintained across updates as they are stored in the mounted directories.
+```bash
+git pull
+docker compose up -d --build
+```
 
-### Option 2: Docker Compose
+### Docker Run
 
-1. Pull the latest image:
-   ```bash
-   docker pull fuyucch1/vinted-notifications:latest
-   ```
-2. Restart your container:
-   ```bash
-   docker-compose down
-   docker-compose up -d
-   ```
+```bash
+git pull
+docker build -t vinted-deal-hunter .
+docker stop vinted-deal-hunter && docker rm vinted-deal-hunter
+# then run the container again with the same command as in the installation section
+```
 
-   > **Important**: This update method preserves your data because of the named volumes (`VN_data` and `VN_logs`). Your
-   database and logs will be maintained across updates as they are stored in these Docker-managed volumes.
+### Self-Build
 
-### Option 3: Self-Build
+```bash
+git pull
+pip install -r requirements.txt
+```
 
-1. Download the latest [release](https://github.com/Fuyucch1/Vinted-Notifications/releases/latest)
-2. Back up your `vinted_notifications.db` file
-3. Replace all files with the new ones
-4. Restart the application
+Then restart the application.
 
 ## 🤝 Contributing
 
@@ -323,8 +299,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📜 License
 
-This project is licensed under the [GNU AFFERO GENERAL PUBLIC LICENSE](LICENSE).
+This project is licensed under the [GNU AFFERO GENERAL PUBLIC LICENSE](LICENSE), inherited from the upstream
+project it forks.
+
+Changes made in this fork: market price reference and deal scoring, enriched notification fields, HTML escaping of
+Vinted text, and tolerant message template rendering.
 
 ## 🙏 Acknowledgements
 
+- Thanks to [@Fuyucch1](https://github.com/Fuyucch1) for [Vinted-Notifications](https://github.com/Fuyucch1/Vinted-Notifications), the upstream project this fork is built on.
 - Thanks to [@herissondev](https://github.com/herissondev) for maintaining pyVinted, a core dependency of this project.

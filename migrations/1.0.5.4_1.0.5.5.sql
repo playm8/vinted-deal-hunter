@@ -34,6 +34,10 @@ WHERE key = 'message_template'
 <a href="{image}">&#8205;</a>';
 
 UPDATE parameters
+SET value = 'https://github.com/playm8/vinted-deal-hunter'
+WHERE key = 'github_url';
+
+UPDATE parameters
 SET value = '1.0.5.5'
 WHERE key = 'version';
 
