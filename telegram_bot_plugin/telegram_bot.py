@@ -250,7 +250,9 @@ class LeRobot:
 
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 
-    async def send_new_post(self, content, url, text, buy_url=None, buy_text=None):
+    async def send_new_post(
+        self, content, url, text, buy_url=None, buy_text=None, silent=False
+    ):
         try:
             async with self.bot:
                 chat_ID = str(db.get_parameter("telegram_chat_id"))
@@ -261,6 +263,7 @@ class LeRobot:
                     chat_ID,
                     content,
                     parse_mode="HTML",
+                    disable_notification=silent,
                     read_timeout=40,
                     write_timeout=40,
                     reply_markup=InlineKeyboardMarkup(buttons),
@@ -272,7 +275,7 @@ class LeRobot:
             )
             await asyncio.sleep(retry_after + 2)
             # Retry sending the message
-            await self.send_new_post(content, url, text, buy_url, buy_text)
+            await self.send_new_post(content, url, text, buy_url, buy_text, silent)
         except Exception as e:
             logger.error(f"Error sending new post: {str(e)}", exc_info=True)
 
@@ -294,8 +297,17 @@ class LeRobot:
         try:
             while 1:
                 if not self.new_items_queue.empty():
-                    content, url, text, buy_url, buy_text = self.new_items_queue.get()
-                    await self.send_new_post(content, url, text, buy_url, buy_text)
+                    (
+                        content,
+                        url,
+                        text,
+                        buy_url,
+                        buy_text,
+                        silent,
+                    ) = self.new_items_queue.get()
+                    await self.send_new_post(
+                        content, url, text, buy_url, buy_text, silent
+                    )
                 else:
                     await asyncio.sleep(0.1)
                     pass

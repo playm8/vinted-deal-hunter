@@ -1,5 +1,6 @@
 import sqlite3
 from traceback import print_exc
+from time import time
 
 DB_PATH = "./data/vinted_notifications.db"
 
@@ -455,6 +456,52 @@ def get_items_per_day():
     except Exception:
         print_exc()
         return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_price_reference(cache_key, max_age_seconds):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT median_price, currency, sample_size, updated_at "
+            "FROM price_reference_cache WHERE cache_key=?",
+            (cache_key,),
+        )
+        result = cursor.fetchone()
+        if result is None:
+            return None
+        if time() - result[3] > max_age_seconds:
+            return None
+        return {"median": result[0], "currency": result[1], "sample_size": result[2]}
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def set_price_reference(cache_key, median_price, currency, sample_size):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO price_reference_cache "
+            "(cache_key, median_price, currency, sample_size, updated_at) "
+            "VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(cache_key) DO UPDATE SET "
+            "median_price=excluded.median_price, currency=excluded.currency, "
+            "sample_size=excluded.sample_size, updated_at=excluded.updated_at",
+            (cache_key, median_price, currency, sample_size, time()),
+        )
+        conn.commit()
+    except Exception:
+        print_exc()
     finally:
         if conn:
             conn.close()

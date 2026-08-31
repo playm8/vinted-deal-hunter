@@ -1,9 +1,8 @@
-version: '3.8'
-
 services:
-  vinted-notifications:
-    image: fuyucch1/vinted-notifications:latest
-    pull_policy: always
+  vinted-deal-hunter:
+    build: .
+    image: vinted-deal-hunter:latest
+    container_name: vinted-deal-hunter
     ports:
       - "8000:8000"
       - "8080:8080"

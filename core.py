@@ -1,7 +1,10 @@
 import db
+import price_reference
+import re
 import requests
 from pyVintedVN import Vinted, requester
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from html import escape
 from logger import get_logger
 
 # Get logger for this module
@@ -303,6 +306,69 @@ def process_items(queue):
         logger.info(f"Scraped {len(data)} items for query: {query[1]}")
 
 
+class _SafeDict(dict):
+    """
+    A mapping that never raises on a missing key.
+
+    The message template is user-editable, so an unknown placeholder must not
+    crash the notification pipeline.
+    """
+
+    def __missing__(self, key):
+        return f"{{{key}}}"
+
+
+def _raw_amount(item, key):
+    """Read a nested price amount from the raw API payload."""
+    try:
+        return item.raw_data[key]["amount"]
+    except (KeyError, TypeError):
+        return None
+
+
+def build_item_message(item, evaluation=None):
+    """
+    Render the notification message for an item.
+
+    All text coming from Vinted is HTML-escaped because the Telegram plugin
+    sends messages with parse_mode="HTML".
+
+    Args:
+        item (Item): The item to build a message for.
+        evaluation (dict, optional): A price evaluation already computed for
+            this item. Passing it avoids evaluating the same item twice.
+
+    Returns:
+        str: The rendered message.
+    """
+    message_template = db.get_parameter("message_template")
+
+    total_amount = _raw_amount(item, "total_item_price")
+    total_price = (
+        f"{total_amount} {item.currency}" if total_amount is not None else "n/a"
+    )
+
+    if evaluation is None:
+        evaluation = price_reference.evaluate(item)
+
+    values = _SafeDict(
+        title=escape(str(item.title or "")),
+        price=f"{item.price} {item.currency}",
+        total_price=total_price,
+        brand=escape(str(item.brand_title or "")),
+        size=escape(str(item.size_title or "n/a")),
+        status=escape(str(item.raw_data.get("status") or "n/a")),
+        favourites=item.raw_data.get("favourite_count", 0),
+        views=item.raw_data.get("view_count", 0),
+        url=item.url,
+        image="" if item.photo is None else item.photo,
+        market_price=evaluation["market_price"],
+        discount=evaluation["discount"],
+        deal=evaluation["deal"],
+    )
+    return message_template.format_map(values)
+
+
 def clear_item_queue(items_queue, new_items_queue):
     """
     Process items from the items_queue.
@@ -338,17 +404,22 @@ def clear_item_queue(items_queue, new_items_queue):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
             else:
+                evaluation = price_reference.evaluate(item)
+                # Items priced too far above the market are recorded but not
+                # notified, so that the feed stays quiet instead of noisy.
+                if not price_reference.should_notify(evaluation):
+                    db.update_last_timestamp(query_id, item.raw_timestamp)
+                    logger.info(
+                        f"Item {item.id} skipped, {evaluation['discount']}"
+                    )
+                    continue
                 # We create the message
-                message_template = db.get_parameter("message_template")
-                content = message_template.format(
-                    title=item.title,
-                    price=str(item.price) + " " + item.currency,
-                    brand=item.brand_title,
-                    image=None if item.photo is None else item.photo,
-                )
+                content = build_item_message(item, evaluation)
+                silent = price_reference.is_silent(evaluation)
                 # add the item to the queue
-                new_items_queue.put((content, item.url, "Open Vinted", None, None))
-                # new_items_queue.put((content, item.url, "Open Vinted", item.buy_url, "Open buy page"))
+                new_items_queue.put(
+                    (content, item.url, "Open Vinted", None, None, silent)
+                )
                 # Add the item to the db
                 db.add_item_to_db(
                     id=item.id,
@@ -405,6 +476,10 @@ def check_version():
 
         if response.status_code == 200:
             latest_version = response.url.split("/")[-1]
+            # A repository with no release at all redirects to the releases
+            # index page, whose last URL segment would be read as a version.
+            if not re.match(r"^v?\d", latest_version):
+                return True, ver, ver, github_url
             is_up_to_date = ver == latest_version
             return is_up_to_date, ver, latest_version, github_url
         else:
