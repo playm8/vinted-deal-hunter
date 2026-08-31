@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Items - Vinted Notifications{% endblock %}
+{% block title %}{{ t("Items") }} - Vinted Deal Hunter{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Items</h1>
+    <h1 class="h2">{{ t("Items") }}</h1>
 </div>
 
 <div class="row mb-4">
@@ -12,16 +12,16 @@
         <div class="card">
             <div class="card-header d-flex align-items-center">
                 <i class="bi bi-funnel-fill me-2 text-info"></i>
-                <h5 class="card-title mb-0">Filter Items</h5>
+                <h5 class="card-title mb-0">{{ t("Filter Items") }}</h5>
             </div>
             <div class="card-body">
                 <form action="/items" method="get">
                     <div class="row">
                         <div class="col-md-5">
                             <div class="form-group mb-3">
-                                <label for="query" class="form-label fw-semibold">Search by Query</label>
+                                <label for="query" class="form-label fw-semibold">{{ t("Search by Query") }}</label>
                                 <select class="form-select" id="query" name="query">
-                                    <option value="">All Queries</option>
+                                    <option value="">{{ t("All Queries") }}</option>
                                     {% for query in queries %}
                                     <option value="{{ query.query_id }}" {% if selected_query== query.query_id
                                             %}selected{%
@@ -34,18 +34,18 @@
                         </div>
                         <div class="col-md-5">
                             <div class="form-group mb-3">
-                                <label for="limit" class="form-label fw-semibold">Number of Items</label>
+                                <label for="limit" class="form-label fw-semibold">{{ t("Number of Items") }}</label>
                                 <select class="form-select" id="limit" name="limit">
-                                    <option value="10" {% if limit== 10 %}selected{% endif %}>10 items</option>
-                                    <option value="25" {% if limit== 25 %}selected{% endif %}>25 items</option>
-                                    <option value="50" {% if limit== 50 %}selected{% endif %}>50 items</option>
-                                    <option value="100" {% if limit== 100 %}selected{% endif %}>100 items</option>
+                                    <option value="10" {% if limit== 10 %}selected{% endif %}>{{ t("10 items") }}</option>
+                                    <option value="25" {% if limit== 25 %}selected{% endif %}>{{ t("25 items") }}</option>
+                                    <option value="50" {% if limit== 50 %}selected{% endif %}>{{ t("50 items") }}</option>
+                                    <option value="100" {% if limit== 100 %}selected{% endif %}>{{ t("100 items") }}</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-2 d-flex align-items-center">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search me-1"></i> Apply Filter
+                                <i class="bi bi-search me-1"></i> {{ t("Apply Filter") }}
                             </button>
                         </div>
                     </div>
@@ -69,12 +69,12 @@
                         {% endif %}
                     </h5>
                 </div>
-                <div class="btn-group" role="group" aria-label="View toggle">
+                <div class="btn-group" role="group" aria-label="{{ t("View toggle") }}">
                     <button type="button" class="btn btn-sm btn-outline-primary" id="cardViewBtn">
-                        <i class="bi bi-grid-3x3-gap-fill me-1"></i> Cards
+                        <i class="bi bi-grid-3x3-gap-fill me-1"></i> {{ t("Cards") }}
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-primary" id="listViewBtn">
-                        <i class="bi bi-list-ul me-1"></i> List
+                        <i class="bi bi-list-ul me-1"></i> {{ t("List") }}
                     </button>
                 </div>
             </div>
@@ -108,14 +108,14 @@
                             </div>
                             <div class="card-footer bg-white p-3">
                                 <a href="{{ item.url }}" target="_blank" class="btn btn-primary w-100">
-                                    <i class="bi bi-box-arrow-up-right me-1"></i> View on Vinted
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> {{ t("View on Vinted") }}
                                 </a>
                             </div>
                         </div>
                     </div>
                     {% else %}
                     <div class="col-12 text-center py-5">
-                        <p class="text-muted">No items found</p>
+                        <p class="text-muted">{{ t("No items found") }}</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -125,12 +125,12 @@
                     <table class="table table-hover mb-0">
                         <thead>
                         <tr>
-                            <th>Image</th>
-                            <th>Title</th>
-                            <th>Price</th>
-                            <th>Query</th>
-                            <th>Date</th>
-                            <th>Actions</th>
+                            <th>{{ t("Image") }}</th>
+                            <th>{{ t("Title") }}</th>
+                            <th>{{ t("Price") }}</th>
+                            <th>{{ t("Query") }}</th>
+                            <th>{{ t("Date") }}</th>
+                            <th>{{ t("Actions") }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -153,13 +153,13 @@
                             <td>{{ item.timestamp }}</td>
                             <td>
                                 <a href="{{ item.url }}" target="_blank" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-box-arrow-up-right me-1"></i> View on Vinted
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> {{ t("View on Vinted") }}
                                 </a>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center">No items found</td>
+                            <td colspan="6" class="text-center">{{ t("No items found") }}</td>
                         </tr>
                         {% endfor %}
                         </tbody>

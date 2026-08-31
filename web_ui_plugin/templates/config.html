@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration - Vinted Notifications{% endblock %}
+{% block title %}{{ t("Configuration") }} - Vinted Deal Hunter{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Configuration</h1>
+    <h1 class="h2">{{ t("Configuration") }}</h1>
 </div>
 
 <div class="row">
@@ -12,7 +12,7 @@
         <div class="card">
             <div class="card-header d-flex align-items-center">
                 <i class="bi bi-gear me-2 text-info"></i>
-                <h5 class="card-title mb-0">Application Settings</h5>
+                <h5 class="card-title mb-0">{{ t("Application Settings") }}</h5>
             </div>
             <div class="card-body">
                 <form action="/update_config" method="post">
@@ -21,40 +21,54 @@
                             <div class="card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="bi bi-gear-fill me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">System Settings</h5>
+                                    <h5 class="card-title mb-0">{{ t("System Settings") }}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="items_per_query" class="form-label">Items Per Query</label>
+                                                <label for="ui_language" class="form-label">{{ t("Language") }}</label>
+                                                <select class="form-select" id="ui_language" name="ui_language">
+                                                    {% for code, label in languages.items() %}
+                                                    {% if params.ui_language == code %}
+                                                    <option value="{{ code }}" selected>{{ label }}</option>
+                                                    {% else %}
+                                                    <option value="{{ code }}">{{ label }}</option>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </select>
+                                                <small class="form-text text-muted">{{ t("Interface language") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="items_per_query" class="form-label">{{ t("Items Per Query") }}</label>
                                                 <input type="number" class="form-control" id="items_per_query"
                                                        name="items_per_query" value="{{ params.items_per_query }}">
-                                                <small class="form-text text-muted">Maximum number of items to fetch per
-                                                    query</small>
+                                                <small class="form-text text-muted">{{ t("Maximum number of items to fetch per query") }}</small>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="query_refresh_delay" class="form-label">Query Refresh Delay
-                                                    (seconds)</label>
+                                                <label for="query_refresh_delay" class="form-label">{{ t("Query Refresh Delay (seconds)") }}</label>
                                                 <input type="number" class="form-control" id="query_refresh_delay"
                                                        name="query_refresh_delay"
                                                        value="{{ params.query_refresh_delay }}">
-                                                <small class="form-text text-muted">Delay between query refreshes in
-                                                    seconds</small>
+                                                <small class="form-text text-muted">{{ t("Delay between query refreshes in seconds") }}</small>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="mb-3">
-                                                <label for="banwords-input" class="form-label">Banwords</label>
+                                                <label for="banwords-input" class="form-label">{{ t("Banwords") }}</label>
                                                 <div class="input-group mb-2">
                                                     <input type="text" class="form-control" id="banwords-input"
-                                                           placeholder="Enter a word to ban">
+                                                           placeholder="{{ t("Enter a word to ban") }}">
                                                     <button class="btn btn-outline-secondary" type="button"
-                                                            id="add-banword-btn">Add
+                                                            id="add-banword-btn">{{ t("Add") }}
                                                     </button>
                                                 </div>
                                                 <div id="banwords-container" class="d-flex flex-wrap gap-2 mb-2">
@@ -62,9 +76,7 @@
                                                 </div>
                                                 <input type="hidden" id="banwords" name="banwords"
                                                        value="{{ params.banwords }}">
-                                                <small class="form-text text-muted">Words to filter out from item
-                                                    titles. Items with these words in their titles will be
-                                                    ignored.</small>
+                                                <small class="form-text text-muted">{{ t("Words to filter out from item titles. Items with these words in their titles will be ignored.") }}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -76,7 +88,7 @@
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="card-title mb-0">Deal Detection</h5>
+                                    <h5 class="card-title mb-0">{{ t("Deal Detection") }}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
@@ -91,73 +103,69 @@
                                                            name="price_reference_enabled">
                                                     {% endif %}
                                                     <label class="form-check-label" for="price_reference_enabled">
-                                                        Enable market price reference
+                                                        {{ t("Enable market price reference") }}
                                                     </label>
                                                 </div>
-                                                <small class="form-text text-muted">Compares each new item with the median price of
-                                                    similar Vinted listings to score the deal. Costs one extra request per new item
-                                                    (cached).</small>
+                                                <small class="form-text text-muted">{{ t("Compares each new item with the median price of similar Vinted listings to score the deal. Costs one extra request per new item (cached).") }}</small>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-3">
                                             <div class="mb-3">
-                                                <label for="price_reference_sample_size" class="form-label">Sample Size</label>
+                                                <label for="price_reference_sample_size" class="form-label">{{ t("Sample Size") }}</label>
                                                 <input type="number" class="form-control" id="price_reference_sample_size"
                                                        name="price_reference_sample_size"
                                                        value="{{ params.price_reference_sample_size }}">
-                                                <small class="form-text text-muted">Listings fetched per comparison</small>
+                                                <small class="form-text text-muted">{{ t("Listings fetched per comparison") }}</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="mb-3">
-                                                <label for="price_reference_min_samples" class="form-label">Minimum Samples</label>
+                                                <label for="price_reference_min_samples" class="form-label">{{ t("Minimum Samples") }}</label>
                                                 <input type="number" class="form-control" id="price_reference_min_samples"
                                                        name="price_reference_min_samples"
                                                        value="{{ params.price_reference_min_samples }}">
-                                                <small class="form-text text-muted">Below this, no reference is shown</small>
+                                                <small class="form-text text-muted">{{ t("Below this, no reference is shown") }}</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="mb-3">
-                                                <label for="price_reference_ttl_hours" class="form-label">Cache TTL (hours)</label>
+                                                <label for="price_reference_ttl_hours" class="form-label">{{ t("Cache TTL (hours)") }}</label>
                                                 <input type="number" class="form-control" id="price_reference_ttl_hours"
                                                        name="price_reference_ttl_hours"
                                                        value="{{ params.price_reference_ttl_hours }}">
-                                                <small class="form-text text-muted">How long a reference price is reused</small>
+                                                <small class="form-text text-muted">{{ t("How long a reference price is reused") }}</small>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="mb-3">
-                                                <label for="deal_threshold_good" class="form-label">Good / Hot Deal (%)</label>
+                                                <label for="deal_threshold_good" class="form-label">{{ t("Good / Hot Deal (%)") }}</label>
                                                 <div class="input-group">
                                                     <input type="number" class="form-control" id="deal_threshold_good"
                                                            name="deal_threshold_good" value="{{ params.deal_threshold_good }}">
                                                     <input type="number" class="form-control" id="deal_threshold_hot"
                                                            name="deal_threshold_hot" value="{{ params.deal_threshold_hot }}">
                                                 </div>
-                                                <small class="form-text text-muted">Discount thresholds below market</small>
+                                                <small class="form-text text-muted">{{ t("Discount thresholds below market") }}</small>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="notify_silent_below" class="form-label">Silent Below (%)</label>
+                                                <label for="notify_silent_below" class="form-label">{{ t("Silent Below (%)") }}</label>
                                                 <input type="number" class="form-control" id="notify_silent_below"
                                                        name="notify_silent_below" value="{{ params.notify_silent_below }}">
-                                                <small class="form-text text-muted">Items discounted less than this arrive without a
-                                                    sound. Leave empty to make every notification audible.</small>
+                                                <small class="form-text text-muted">{{ t("Items discounted less than this arrive without a sound. Leave empty to make every notification audible.") }}</small>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="notify_skip_below" class="form-label">Skip Below (%)</label>
+                                                <label for="notify_skip_below" class="form-label">{{ t("Skip Below (%)") }}</label>
                                                 <input type="number" class="form-control" id="notify_skip_below"
                                                        name="notify_skip_below" value="{{ params.notify_skip_below }}">
-                                                <small class="form-text text-muted">Items discounted less than this are not notified at
-                                                    all. Leave empty to notify everything. Use 0 to drop anything above market.</small>
+                                                <small class="form-text text-muted">{{ t("Items discounted less than this are not notified at all. Leave empty to notify everything. Use 0 to drop anything above market.") }}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -170,7 +178,7 @@
                             <div class="card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="bi bi-telegram me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">Telegram Bot</h5>
+                                    <h5 class="card-title mb-0">{{ t("Telegram Bot") }}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-3">
@@ -183,22 +191,21 @@
                                                    name="telegram_enabled">
                                             {% endif %}
                                             <label class="form-check-label" for="telegram_enabled">
-                                                Auto Start
+                                                {{ t("Auto Start") }}
                                             </label>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="telegram_token" class="form-label">Bot Token</label>
+                                        <label for="telegram_token" class="form-label">{{ t("Bot Token") }}</label>
                                         <input type="text" class="form-control" id="telegram_token"
                                                name="telegram_token" value="{{ params.telegram_token }}">
-                                        <small class="form-text text-muted">Get this from BotFather</small>
+                                        <small class="form-text text-muted">{{ t("Get this from BotFather") }}</small>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="telegram_chat_id" class="form-label">Chat ID</label>
+                                        <label for="telegram_chat_id" class="form-label">{{ t("Chat ID") }}</label>
                                         <input type="text" class="form-control" id="telegram_chat_id"
                                                name="telegram_chat_id" value="{{ params.telegram_chat_id }}">
-                                        <small class="form-text text-muted">The chat ID where notifications will be
-                                            sent</small>
+                                        <small class="form-text text-muted">{{ t("The chat ID where notifications will be sent") }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -207,7 +214,7 @@
                             <div class="card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="bi bi-rss me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">RSS Feed</h5>
+                                    <h5 class="card-title mb-0">{{ t("RSS Feed") }}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-3">
@@ -220,23 +227,21 @@
                                                    name="rss_enabled">
                                             {% endif %}
                                             <label class="form-check-label" for="rss_enabled">
-                                                Auto Start
+                                                {{ t("Auto Start") }}
                                             </label>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="rss_port" class="form-label">Port</label>
+                                        <label for="rss_port" class="form-label">{{ t("Port") }}</label>
                                         <input type="number" class="form-control" id="rss_port" name="rss_port"
                                                value="{{ params.rss_port }}">
-                                        <small class="form-text text-muted">The port on which the RSS feed will be
-                                            served</small>
+                                        <small class="form-text text-muted">{{ t("The port on which the RSS feed will be served") }}</small>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="rss_max_items" class="form-label">Maximum Items</label>
+                                        <label for="rss_max_items" class="form-label">{{ t("Maximum Items") }}</label>
                                         <input type="number" class="form-control" id="rss_max_items"
                                                name="rss_max_items" value="{{ params.rss_max_items }}">
-                                        <small class="form-text text-muted">Maximum number of items to keep in the RSS
-                                            feed</small>
+                                        <small class="form-text text-muted">{{ t("Maximum number of items to keep in the RSS feed") }}</small>
                                     </div>
                                 </div>
                             </div>
@@ -247,7 +252,7 @@
                             <div class="card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="bi bi-shield-lock me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">Proxy Settings</h5>
+                                    <h5 class="card-title mb-0">{{ t("Proxy Settings") }}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
@@ -262,26 +267,23 @@
                                                            name="check_proxies">
                                                     {% endif %}
                                                     <label class="form-check-label" for="check_proxies">
-                                                        Check Proxies
+                                                        {{ t("Check Proxies") }}
                                                     </label>
-                                                    <small class="form-text text-muted d-block">Verify if proxies are
-                                                        working before using them</small>
+                                                    <small class="form-text text-muted d-block">{{ t("Verify if proxies are working before using them") }}</small>
                                                 </div>
                                             </div>
                                             <div class="mb-3">
-                                                <label for="proxy_list" class="form-label">Proxy List</label>
+                                                <label for="proxy_list" class="form-label">{{ t("Proxy List") }}</label>
                                                 <textarea class="form-control" id="proxy_list" name="proxy_list"
                                                           rows="3">{{ params.proxy_list }}</textarea>
-                                                <small class="form-text text-muted">List of proxies separated by
-                                                    semicolons (;)<br>
-                                                    Format: http://ip:port or ip:port</small>
+                                                <small class="form-text text-muted">{{ t("List of proxies separated by semicolons (;)") }}<br>
+                                                    {{ t("Format: http://ip:port or ip:port") }}</small>
                                             </div>
                                             <div class="mb-3">
-                                                <label for="proxy_list_link" class="form-label">Proxy List Link</label>
+                                                <label for="proxy_list_link" class="form-label">{{ t("Proxy List Link") }}</label>
                                                 <input type="text" class="form-control" id="proxy_list_link"
                                                        name="proxy_list_link" value="{{ params.proxy_list_link }}">
-                                                <small class="form-text text-muted">URL to fetch proxies from (one proxy
-                                                    per line)</small>
+                                                <small class="form-text text-muted">{{ t("URL to fetch proxies from (one proxy per line)") }}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -295,14 +297,13 @@
                             <div class="card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="bi bi-gear-wide-connected me-2 text-info"></i>
-                                    <h5 class="card-title mb-0">Advanced Settings</h5>
+                                    <h5 class="card-title mb-0">{{ t("Advanced Settings") }}</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="mb-3">
-                                                <label for="message_template" class="form-label">Notification Message
-                                                    Template</label>
+                                                <label for="message_template" class="form-label">{{ t("Notification Message Template") }}</label>
                                                 <textarea class="form-control" id="message_template"
                                                           name="message_template"
                                                           rows="6">{{ params.message_template }}</textarea>
@@ -312,21 +313,19 @@
                                         </div>
                                         <div class="col-md-12">
                                             <div class="mb-3">
-                                                <label for="user_agents" class="form-label">User Agents</label>
+                                                <label for="user_agents" class="form-label">{{ t("User Agents") }}</label>
                                                 <textarea class="form-control" id="user_agents" name="user_agents"
                                                           rows="5">{{ params.user_agents }}</textarea>
-                                                <small class="form-text text-muted">List of user agents for HTTP
-                                                    requests (JSON format)</small>
+                                                <small class="form-text text-muted">{{ t("List of user agents for HTTP requests (JSON format)") }}</small>
                                             </div>
                                         </div>
                                         <div class="col-md-12">
                                             <div class="mb-3">
-                                                <label for="default_headers" class="form-label">Default Headers</label>
+                                                <label for="default_headers" class="form-label">{{ t("Default Headers") }}</label>
                                                 <textarea class="form-control" id="default_headers"
                                                           name="default_headers"
                                                           rows="3">{{ params.default_headers }}</textarea>
-                                                <small class="form-text text-muted">Default headers for HTTP requests
-                                                    (JSON format)</small>
+                                                <small class="form-text text-muted">{{ t("Default headers for HTTP requests (JSON format)") }}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -336,7 +335,7 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12">
-                            <button type="submit" class="btn btn-primary">Save Configuration</button>
+                            <button type="submit" class="btn btn-primary">{{ t("Save Configuration") }}</button>
                         </div>
                     </div>
                 </form>
@@ -350,25 +349,24 @@
         <div class="card">
             <div class="card-header d-flex align-items-center">
                 <i class="bi bi-toggles me-2 text-info"></i>
-                <h5 class="card-title mb-0">Process Control</h5>
+                <h5 class="card-title mb-0">{{ t("Process Control") }}</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h6 class="mb-0">Telegram Bot</h6>
-                                <small class="text-muted process-status" data-process="telegram">Checking
-                                    status...</small>
+                                <h6 class="mb-0">{{ t("Telegram Bot") }}</h6>
+                                <small class="text-muted process-status" data-process="telegram">{{ t("Checking status...") }}</small>
                             </div>
                             <div>
                                 <button class="btn btn-success process-control" data-process="telegram"
                                         data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
+                                    <i class="bi bi-play-fill"></i> {{ t("Start") }}
                                 </button>
                                 <button class="btn btn-danger process-control" data-process="telegram"
                                         data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
+                                    <i class="bi bi-stop-fill"></i> {{ t("Stop") }}
                                 </button>
                             </div>
                         </div>
@@ -376,15 +374,15 @@
                     <div class="col-md-6">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <h6 class="mb-0">RSS Feed</h6>
-                                <small class="text-muted process-status" data-process="rss">Checking status...</small>
+                                <h6 class="mb-0">{{ t("RSS Feed") }}</h6>
+                                <small class="text-muted process-status" data-process="rss">{{ t("Checking status...") }}</small>
                             </div>
                             <div>
                                 <button class="btn btn-success process-control" data-process="rss" data-action="start">
-                                    <i class="bi bi-play-fill"></i> Start
+                                    <i class="bi bi-play-fill"></i> {{ t("Start") }}
                                 </button>
                                 <button class="btn btn-danger process-control" data-process="rss" data-action="stop">
-                                    <i class="bi bi-stop-fill"></i> Stop
+                                    <i class="bi bi-stop-fill"></i> {{ t("Stop") }}
                                 </button>
                             </div>
                         </div>
@@ -461,9 +459,9 @@
                 .then(data => {
                     // Update status text
                     document.querySelector('.process-status[data-process="telegram"]').textContent =
-                        data.telegram ? 'Running' : 'Stopped';
+                        data.telegram ? t('Running') : t('Stopped');
                     document.querySelector('.process-status[data-process="rss"]').textContent =
-                        data.rss ? 'Running' : 'Stopped';
+                        data.rss ? t('Running') : t('Stopped');
 
                     // Update button visibility
                     document.querySelector('.process-control[data-process="telegram"][data-action="start"]').style.display =
@@ -484,7 +482,7 @@
                     console.error('Error:', error);
                     // Set status to unknown
                     document.querySelectorAll('.process-status').forEach(status => {
-                        status.textContent = 'Unknown';
+                        status.textContent = t('Unknown');
                     });
                     // Re-enable all buttons
                     document.querySelectorAll('.process-control').forEach(btn => {
