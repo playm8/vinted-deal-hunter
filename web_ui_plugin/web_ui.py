@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import db
 import core
+import price_reference
 import os
 import re
 from urllib.parse import urlparse, parse_qs
@@ -141,6 +142,7 @@ def index():
         telegram_running=telegram_running,
         rss_running=rss_running,
         stats=stats,
+        price_trends=db.get_price_trends(days=30),
     )
 
 
@@ -175,6 +177,7 @@ def queries():
                 "query": query[1],
                 "display": query_name if query_name else query[1],
                 "last_found_item": last_found_item,
+                "has_category": bool(price_reference.extract_catalog_ids(query[1])),
             }
         )
 

@@ -151,6 +151,47 @@
     </div>
 </div>
 
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">{{ t("Price Trends") }}</h5>
+                <small class="text-muted">{{ t("Last 30 days") }}</small>
+            </div>
+            <div class="card-body">
+                {% if price_trends %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>{{ t("Brand") }}</th>
+                            <th class="text-end">{{ t("References") }}</th>
+                            <th class="text-end">{{ t("Average median") }}</th>
+                            <th class="text-end">{{ t("Lowest") }}</th>
+                            <th class="text-end">{{ t("Highest") }}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for brand, samples, average, lowest, highest, currency in price_trends %}
+                        <tr>
+                            <td>{{ brand }}</td>
+                            <td class="text-end">{{ samples }}</td>
+                            <td class="text-end">{{ average }} {{ currency }}</td>
+                            <td class="text-end text-success">{{ lowest }} {{ currency }}</td>
+                            <td class="text-end text-danger">{{ highest }} {{ currency }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">{{ t("No price references recorded yet. They build up as new items are found.") }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-6">
         <div class="card">

@@ -14,7 +14,7 @@ triggers a single extra catalog request.
 import re
 import statistics
 import time
-from urllib.parse import quote_plus, urlparse
+from urllib.parse import parse_qsl, quote_plus, urlparse
 
 import db
 from logger import get_logger
@@ -24,12 +24,38 @@ logger = get_logger(__name__)
 
 # Words that carry no discriminating value when looking for comparable items.
 STOPWORDS = {
-    "a", "an", "the", "and", "or", "de", "des", "du", "la", "le", "les", "un",
-    "une", "et", "pour", "avec", "sans", "en", "au", "aux", "sur", "par", "d",
-    "l", "taille", "size", "neuf", "neuve", "new", "vintage", "occasion",
-    "etat", "état", "tres", "très", "bon", "bonne", "comme", "jamais", "porte",
-    "portee", "portée", "homme", "femme", "enfant", "unisexe", "original",
-    "authentique", "authentic", "rare", "collector", "lot", "cm", "mm",
+    # English
+    "a", "an", "the", "and", "or", "for", "with", "without", "new", "used",
+    "vintage", "size", "men", "women", "kids", "unisex", "original",
+    "authentic", "rare", "collector", "very", "good", "condition", "worn",
+    "never", "brand",
+    # French
+    "de", "des", "du", "la", "le", "les", "un", "une", "et", "pour", "avec",
+    "sans", "en", "au", "aux", "sur", "par", "taille", "neuf", "neuve",
+    "occasion", "etat", "état", "tres", "très", "bon", "bonne", "comme",
+    "jamais", "porte", "portee", "portée", "homme", "femme", "enfant",
+    "unisexe", "authentique", "collectionneur",
+    # Italian
+    "il", "lo", "gli", "gli", "delle", "dei", "con", "senza", "per", "nuovo",
+    "nuova", "usato", "usata", "taglia", "ottimo", "ottime", "buono",
+    "condizioni", "donna", "uomo", "bambino", "originale", "mai",
+    # German
+    "der", "die", "das", "und", "oder", "mit", "ohne", "für", "fur", "neu",
+    "gebraucht", "größe", "grosse", "sehr", "gut", "zustand", "herren",
+    "damen", "kinder", "original", "getragen", "nie",
+    # Spanish
+    "el", "los", "las", "una", "unos", "unas", "con", "sin", "para", "nuevo",
+    "nueva", "usado", "usada", "talla", "muy", "bueno", "buena", "estado",
+    "hombre", "mujer", "nino", "niño", "original", "nunca",
+    # Dutch and Polish, common on cross-border listings
+    "het", "een", "met", "zonder", "voor", "nieuw", "nieuwe", "maat", "zeer",
+    "goed", "goede", "staat", "dames", "heren", "kinderen", "nooit",
+    "gedragen", "schoenen", "sportschoenen",
+    "nowy", "nowa", "uzywany", "używany", "rozmiar", "bardzo", "dobry",
+    "stan", "meski", "męski", "damski", "dzieciecy", "nigdy",
+    # "with/without tags" wording, which describes condition, not the product
+    "etiquette", "etikett", "etiqueta", "cartellino", "tags", "tag", "label",
+    "metka", "labels",
 }
 
 # A token must look like an actual word to be kept as a search keyword.
@@ -150,7 +176,33 @@ def extract_keywords(title, brand=None, size=None, max_keywords=MAX_KEYWORDS):
     return keywords
 
 
-def build_reference_query(locale, brand, keywords, size=None):
+def extract_catalog_ids(query_url):
+    """
+    Read the catalogue filter of a monitored query.
+
+    A query narrowed to a category ("Trainers", "Jeans") lets the comparison
+    stay inside that category instead of drifting to accessories of the same
+    brand. Queries without a category simply get no filter.
+
+    Args:
+        query_url (str): The monitored query URL.
+
+    Returns:
+        list[str]: The catalogue ids found, possibly empty.
+    """
+    if not query_url:
+        return []
+    try:
+        return [
+            value
+            for key, value in parse_qsl(urlparse(query_url).query)
+            if key == "catalog[]" and value
+        ]
+    except Exception:
+        return []
+
+
+def build_reference_query(locale, brand, keywords, size=None, catalog_ids=None):
     """
     Build the Vinted catalog URL used to collect comparable listings.
 
@@ -159,6 +211,7 @@ def build_reference_query(locale, brand, keywords, size=None):
         brand (str): The item brand.
         keywords (list[str]): Significant keywords from the title.
         size (str, optional): The item size, added to narrow the comparison.
+        catalog_ids (list[str], optional): Categories to stay within.
 
     Returns:
         str: A Vinted catalog search URL.
@@ -169,7 +222,10 @@ def build_reference_query(locale, brand, keywords, size=None):
     terms.extend(keywords)
     if size:
         terms.append(size)
-    return f"https://{locale}/catalog?search_text={quote_plus(' '.join(terms))}"
+    url = f"https://{locale}/catalog?search_text={quote_plus(' '.join(terms))}"
+    for catalog_id in catalog_ids or []:
+        url += f"&catalog[]={quote_plus(str(catalog_id))}"
+    return url
 
 
 def _filter_outliers(prices):
@@ -221,7 +277,7 @@ def _dispersion(prices, median):
     return statistics.pstdev(prices) / median * 100
 
 
-def get_market_reference(item, locale):
+def get_market_reference(item, locale, catalog_ids=None):
     """
     Compute the median price of listings comparable to the given item.
 
@@ -233,6 +289,7 @@ def get_market_reference(item, locale):
     Args:
         item (Item): The item to find a reference price for.
         locale (str): The Vinted domain to search on.
+        catalog_ids (list[str], optional): Categories to stay within.
 
     Returns:
         dict | None: {"median", "currency", "sample_size", "dispersion",
@@ -258,6 +315,7 @@ def get_market_reference(item, locale):
             "-".join(sorted(keywords)),
             size.lower(),
             group or "any",
+            ",".join(catalog_ids or []),
         ]
     )
 
@@ -269,7 +327,9 @@ def get_market_reference(item, locale):
     sample_size = _get_int_parameter("price_reference_sample_size", 20)
     min_samples = _get_int_parameter("price_reference_min_samples", 5)
 
-    url = build_reference_query(locale, item.brand_title, keywords, size)
+    url = build_reference_query(
+        locale, item.brand_title, keywords, size, catalog_ids
+    )
     try:
         comparables = Vinted().items.search(url, sample_size, 1)
     except Exception as e:
@@ -308,6 +368,14 @@ def get_market_reference(item, locale):
         "dispersion": round(_dispersion(prices, median), 1),
         "condition_matched": condition_matched,
     }
+    db.add_price_reference_history(
+        item.brand_title,
+        " ".join(keywords),
+        reference["median"],
+        reference["currency"],
+        reference["sample_size"],
+        reference["dispersion"],
+    )
     db.set_price_reference(
         cache_key,
         reference["median"],
@@ -319,7 +387,7 @@ def get_market_reference(item, locale):
     return reference
 
 
-def evaluate(item):
+def evaluate(item, query_url=None):
     """
     Compare an item price with its market reference and score the deal.
 
@@ -329,6 +397,8 @@ def evaluate(item):
 
     Args:
         item (Item): The item to evaluate.
+        query_url (str, optional): The monitored query the item came from,
+            used to keep the comparison inside the same category.
 
     Returns:
         dict: {"market_price", "discount", "deal", "sample_size",
@@ -348,7 +418,9 @@ def evaluate(item):
 
     try:
         locale = urlparse(item.url).netloc or "www.vinted.fr"
-        reference = get_market_reference(item, locale)
+        reference = get_market_reference(
+            item, locale, extract_catalog_ids(query_url)
+        )
         if reference is None:
             return unknown
 
