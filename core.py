@@ -377,6 +377,7 @@ def clear_item_queue(items_queue, new_items_queue):
     if not items_queue.empty():
         data, query_id = items_queue.get()
         banwords_str = db.get_parameter("banwords")
+        query_url = db.get_query_url(query_id)
         for item in reversed(data):
 
             # If already in db, pass
@@ -404,7 +405,7 @@ def clear_item_queue(items_queue, new_items_queue):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
             else:
-                evaluation = price_reference.evaluate(item)
+                evaluation = price_reference.evaluate(item, query_url)
                 # Items priced too far above the market are recorded but not
                 # notified, so that the feed stays quiet instead of noisy.
                 if not price_reference.should_notify(evaluation):

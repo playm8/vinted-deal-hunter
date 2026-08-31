@@ -215,6 +215,15 @@ if __name__ == "__main__":
         else:
             break
 
+    # Keep the price history bounded by the configured retention window.
+    try:
+        retention = int(float(db.get_parameter("price_history_retention_days") or 90))
+        removed = db.purge_price_reference_history(retention)
+        if removed:
+            logger.info(f"Purged {removed} price history entries older than {retention} days")
+    except Exception as e:
+        logger.warning(f"Could not purge price history: {e}")
+
     # Plugin checker
     plugin_checker()
 

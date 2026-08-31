@@ -147,6 +147,18 @@ TRANSLATIONS = {
         "No items found yet": "Aucun article trouvé pour l'instant",
         "Process Status": "État des processus",
         "Recent Items": "Articles récents",
+        "Price Trends": "Tendances de prix",
+        "no category": "sans catégorie",
+        "Add a category to this Vinted search to get more reliable price references":
+            "Ajoutez une catégorie à cette recherche Vinted pour obtenir des références de prix plus fiables",
+        "Last 30 days": "30 derniers jours",
+        "Brand": "Marque",
+        "References": "Références",
+        "Average median": "Médiane moyenne",
+        "Lowest": "Plus bas",
+        "Highest": "Plus haut",
+        "No price references recorded yet. They build up as new items are found.":
+            "Aucune référence de prix enregistrée pour l'instant. Elles s'accumulent au fil des articles trouvés.",
         "Cards": "Cartes",
         "List": "Liste",
         "View All": "Tout voir",

@@ -77,7 +77,13 @@
                         {% for query in queries %}
                         <tr>
                             <td>{{ query.id }}</td>
-                            <td>{{ query.display }}</td>
+                            <td>{{ query.display }}
+                            {% if not query.has_category %}
+                            <span class="badge bg-secondary ms-2"
+                                  title="{{ t("Add a category to this Vinted search to get more reliable price references") }}">
+                                {{ t("no category") }}
+                            </span>
+                            {% endif %}</td>
                             <td>{{ query.last_found_item }}</td>
                             <td>
                                 <div class="btn-group" role="group">

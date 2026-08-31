@@ -115,6 +115,22 @@ def get_queries():
             conn.close()
 
 
+def get_query_url(query_id):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT query FROM queries WHERE id=?", (query_id,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
 def is_query_in_db(processed_query):
     conn = None
     try:
@@ -522,6 +538,84 @@ def set_price_reference(
         conn.commit()
     except Exception:
         print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def add_price_reference_history(brand, keywords, median_price, currency,
+                                sample_size, dispersion):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO price_reference_history "
+            "(brand, keywords, median_price, currency, sample_size, "
+            "dispersion, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (brand, keywords, median_price, currency, sample_size,
+             dispersion, time()),
+        )
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def purge_price_reference_history(max_age_days):
+    """Drop history older than the retention window, keeping the table small."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM price_reference_history WHERE recorded_at < ?",
+            (time() - max_age_days * 86400,),
+        )
+        conn.commit()
+        return cursor.rowcount
+    except Exception:
+        print_exc()
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_price_trends(days=30, limit=20):
+    """
+    Summarise how brand price references moved over a period.
+
+    Returns one row per brand with its oldest and newest median, so a caller
+    can show whether a brand is getting cheaper or more expensive.
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT brand,
+                   COUNT(*) AS samples,
+                   ROUND(AVG(median_price), 2) AS average_median,
+                   ROUND(MIN(median_price), 2) AS lowest,
+                   ROUND(MAX(median_price), 2) AS highest,
+                   MAX(currency) AS currency
+            FROM price_reference_history
+            WHERE recorded_at >= ? AND brand IS NOT NULL AND brand != ''
+            GROUP BY brand
+            HAVING samples >= 2
+            ORDER BY samples DESC
+            LIMIT ?
+            """,
+            (time() - days * 86400, limit),
+        )
+        return cursor.fetchall()
+    except Exception:
+        print_exc()
+        return []
     finally:
         if conn:
             conn.close()
