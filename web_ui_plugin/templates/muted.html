@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("Muted") }} - Vinted Deal Hunter{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ t("Muted Brands") }}</h5>
+            </div>
+            <div class="card-body">
+                {% if brands %}
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>{{ t("Brand") }}</th>
+                        <th class="text-end">{{ t("Actions") }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for brand, ignored_at in brands %}
+                    <tr>
+                        <td>{{ brand }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{{ url_for('unmute_brand', brand=brand) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                    {{ t("Unmute") }}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted mb-0">{{ t("No muted brands.") }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ t("Muted Sellers") }}</h5>
+            </div>
+            <div class="card-body">
+                {% if sellers %}
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>{{ t("Seller") }}</th>
+                        <th class="text-end">{{ t("Actions") }}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for seller_id, seller_name, ignored_at in sellers %}
+                    <tr>
+                        <td>{{ seller_name or seller_id }}</td>
+                        <td class="text-end">
+                            <form method="post" action="{{ url_for('unmute_seller', seller_id=seller_id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                    {{ t("Unmute") }}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted mb-0">{{ t("No muted sellers.") }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <p class="mb-0 text-muted">
+                    {{ t("Muting happens from the buttons under a Telegram notification. Muted items are still recorded, so they are not seen twice, but nothing is sent.") }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

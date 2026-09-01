@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("Notifications") }} - Vinted Deal Hunter{% endblock %}
+
+{% block content %}
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+    <div class="col">
+        <div class="card h-100"><div class="card-body">
+            <div class="h4 mb-0">{{ summary.seen }}</div>
+            <small class="text-muted">{{ t("Items found today") }}</small>
+        </div></div>
+    </div>
+    <div class="col">
+        <div class="card h-100"><div class="card-body">
+            <div class="h4 mb-0">{{ summary.notified }}</div>
+            <small class="text-muted">{{ t("Notified") }}</small>
+        </div></div>
+    </div>
+    <div class="col">
+        <div class="card h-100"><div class="card-body">
+            <div class="h4 mb-0">{{ summary.silenced }}</div>
+            <small class="text-muted">{{ t("Silent") }}</small>
+        </div></div>
+    </div>
+    <div class="col">
+        <div class="card h-100"><div class="card-body">
+            <div class="h4 mb-0">{{ summary.skipped }}</div>
+            <small class="text-muted">{{ t("Skipped") }}</small>
+        </div></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">{{ t("Decision Log") }}</h5>
+    </div>
+    <div class="card-body">
+        {% if entries %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                <tr>
+                    <th>{{ t("Date") }}</th>
+                    <th>{{ t("Title") }}</th>
+                    <th>{{ t("Brand") }}</th>
+                    <th class="text-end">{{ t("Price") }}</th>
+                    <th>{{ t("Verdict") }}</th>
+                    <th>{{ t("Outcome") }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td class="text-nowrap small">{{ entry.sent_at }}</td>
+                    <td><a href="{{ entry.url }}" target="_blank" rel="noopener">{{ entry.title }}</a></td>
+                    <td>{{ entry.brand or "-" }}</td>
+                    <td class="text-end text-nowrap">{{ entry.price }} {{ entry.currency }}</td>
+                    <td class="small">{{ entry.deal or "-" }}</td>
+                    <td>
+                        {% if entry.skipped %}
+                        <span class="badge bg-secondary">{{ t("Skipped") }}</span>
+                        {% elif entry.silent %}
+                        <span class="badge bg-info text-dark">{{ t("Silent") }}</span>
+                        {% else %}
+                        <span class="badge bg-success">{{ t("Sent") }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">{{ t("Nothing recorded yet. Entries appear as items are found.") }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

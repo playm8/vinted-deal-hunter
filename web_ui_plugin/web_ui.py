@@ -608,6 +608,79 @@ def clear_allowlist():
     return redirect(url_for("allowlist"))
 
 
+@app.route("/muted")
+def muted():
+    """Brands and sellers silenced from a notification button."""
+    lists = db.get_ignored_lists()
+    return render_template(
+        "muted.html", brands=lists["brands"], sellers=lists["sellers"]
+    )
+
+
+@app.route("/unmute/brand/<path:brand>", methods=["POST"])
+def unmute_brand(brand):
+    if db.unignore_brand(brand):
+        flash(f"{translate('No longer muted')}: {brand}", "success")
+    else:
+        flash(f"{translate('Was not muted')}: {brand}", "warning")
+    return redirect(url_for("muted"))
+
+
+@app.route("/unmute/seller/<seller_id>", methods=["POST"])
+def unmute_seller(seller_id):
+    if db.unignore_seller(seller_id):
+        flash(f"{translate('No longer muted')}: {seller_id}", "success")
+    else:
+        flash(f"{translate('Was not muted')}: {seller_id}", "warning")
+    return redirect(url_for("muted"))
+
+
+@app.route("/notifications")
+def notifications():
+    """
+    What happened to each item found.
+
+    log_item_outcome has been recording this all along; this is the first
+    place it can be read, which is what makes a silenced or skipped item
+    explainable rather than a disappearance.
+    """
+    day = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    entries = [
+        {
+            "title": row[0],
+            "price": row[1],
+            "currency": row[2],
+            "url": row[3],
+            "discount": row[4],
+            "deal": row[5],
+            "silent": bool(row[6]),
+            "skipped": bool(row[7]),
+            "sent_at": datetime.fromtimestamp(row[8]).strftime("%Y-%m-%d %H:%M"),
+            "brand": row[9],
+            "seller": row[10],
+        }
+        for row in db.get_notification_log(limit=200)
+    ]
+    return render_template(
+        "notifications.html",
+        entries=entries,
+        summary=db.get_notification_summary(day.timestamp()),
+    )
+
+
+@app.route("/backup", methods=["POST"])
+def backup_now():
+    path = db.backup_database(
+        db.get_parameter("backup_directory") or "./data/backups",
+        int(float(db.get_parameter("backup_keep") or 7)),
+    )
+    if path:
+        flash(f"{translate('Backup written')}: {path}", "success")
+    else:
+        flash(translate("Backup failed"), "error")
+    return redirect(url_for("index"))
+
+
 @app.route("/logs")
 def logs():
     return render_template("logs.html")
