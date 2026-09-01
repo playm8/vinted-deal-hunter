@@ -397,6 +397,11 @@ environment:
 Credentials are read from the environment only: storing them in the database
 would mean guarding the interface with a password it also holds.
 
+If access is already restricted another way — a VPN, a private network, a
+reverse proxy that authenticates — turn off *Warn when the interface has no
+password* in Configuration. A warning that cannot be silenced is one people
+stop reading.
+
 ## 🧪 Tests
 
 ```bash

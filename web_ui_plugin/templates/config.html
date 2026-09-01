@@ -154,6 +154,23 @@
                                                        name="watchdog_cycles" value="{{ params.watchdog_cycles }}">
                                                 <small class="form-text text-muted">{{ t("Empty cycles to tolerate before warning") }}</small>
                                             </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    {% if params.web_ui_auth_warning != 'False' %}
+                                                    <input class="form-check-input" type="checkbox" id="web_ui_auth_warning"
+                                                           name="web_ui_auth_warning" checked>
+                                                    {% else %}
+                                                    <input class="form-check-input" type="checkbox" id="web_ui_auth_warning"
+                                                           name="web_ui_auth_warning">
+                                                    {% endif %}
+                                                    <label class="form-check-label" for="web_ui_auth_warning">
+                                                        {{ t("Warn when the interface has no password") }}
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">{{ t("Turn this off if access is already restricted another way, by a VPN or a private network.") }}</small>
+                                            </div>
+                                        </div>
                                         </div>
                                     </div>
                                     <div class="row">

@@ -94,3 +94,29 @@ def test_a_password_makes_the_interface_ask_for_one(database, monkeypatch):
 
     wrong = base64.b64encode(b"admin:nope").decode()
     assert client.get("/config", headers={"Authorization": f"Basic {wrong}"}).status_code == 401
+
+
+def test_the_warning_shows_by_default(client):
+    assert "not password protected" in client.get("/config").get_data(as_text=True)
+
+
+def test_the_warning_can_be_acknowledged(client, database):
+    # Access may already be restricted by a VPN or a private network, and a
+    # warning that cannot be silenced is one people stop reading.
+    database.set_parameter("web_ui_auth_warning", "False")
+    assert "not password protected" not in client.get("/config").get_data(as_text=True)
+
+
+def test_the_warning_never_shows_when_a_password_is_set(database, monkeypatch):
+    monkeypatch.setenv("WEB_UI_PASSWORD", "s3cret")
+    import base64
+    import importlib
+
+    import web_ui_plugin.web_ui as web_ui
+
+    importlib.reload(web_ui)
+    token = base64.b64encode(b"admin:s3cret").decode()
+    body = web_ui.app.test_client().get(
+        "/config", headers={"Authorization": f"Basic {token}"}
+    ).get_data(as_text=True)
+    assert "not password protected" not in body

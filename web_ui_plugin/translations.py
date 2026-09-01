@@ -88,6 +88,9 @@ TRANSLATIONS = {
         "Anyone who can reach it can read and change your settings. Set WEB_UI_PASSWORD in the environment to require a password.":
             "Toute personne pouvant y accéder peut lire et modifier vos réglages. Définissez WEB_UI_PASSWORD dans l'environnement pour exiger un mot de passe.",
         "Monitoring": "Surveillance",
+        "Warn when the interface has no password": "Avertir quand l'interface n'a pas de mot de passe",
+        "Turn this off if access is already restricted another way, by a VPN or a private network.":
+            "Désactivez si l'accès est déjà restreint autrement, par un VPN ou un réseau privé.",
         "Alert when nothing is kept": "Alerter quand plus rien n'est retenu",
         "Warns you when searches return results but every item is discarded, the signature of a silent breakdown.":
             "Vous avertit quand les recherches renvoient des résultats mais que tous les articles sont écartés, la signature d'une panne silencieuse.",

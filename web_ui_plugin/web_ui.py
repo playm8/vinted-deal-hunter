@@ -71,6 +71,8 @@ def inject_translations():
         "languages": LANGUAGES,
         "js_strings": js_translations(),
         "authentication_enabled": authentication_enabled(),
+        "auth_warning_muted": str(db.get_parameter("web_ui_auth_warning")).lower()
+        == "false",
     }
 
 # Secret key for session management
@@ -422,6 +424,9 @@ def update_config():
     watchdog_enabled = "watchdog_enabled" in request.form
     db.set_parameter("watchdog_enabled", str(watchdog_enabled))
     db.set_parameter("watchdog_cycles", request.form.get("watchdog_cycles", "30"))
+    db.set_parameter(
+        "web_ui_auth_warning", str("web_ui_auth_warning" in request.form)
+    )
     daily_summary_enabled = "daily_summary_enabled" in request.form
     db.set_parameter("daily_summary_enabled", str(daily_summary_enabled))
     db.set_parameter(
