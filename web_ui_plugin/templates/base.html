@@ -197,6 +197,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/muted' %}active{% endif %}" href="/muted">
+                            <i class="bi bi-volume-mute me-2"></i> {{ t("Muted") }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/notifications' %}active{% endif %}" href="/notifications">
+                            <i class="bi bi-bell me-2"></i> {{ t("Notifications") }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.path == '/config' %}active{% endif %}" href="/config">
                             <i class="bi bi-gear me-2"></i> {{ t("Configuration") }}
                         </a>

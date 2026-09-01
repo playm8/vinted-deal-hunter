@@ -1095,3 +1095,35 @@ def checkpoint():
     finally:
         if conn:
             conn.close()
+
+
+def get_notification_log(limit=100, since_timestamp=0):
+    """
+    Return what was decided for recent items, newest first.
+
+    Reading this is the only way to answer "why did I not get notified about
+    that one": the decision is recorded but was, until now, never shown.
+
+    Args:
+        limit (int): How many entries to return.
+        since_timestamp (float): Only entries recorded at or after this.
+
+    Returns:
+        list[tuple]: (title, price, currency, url, discount_pct, deal, silent,
+            skipped, sent_at, brand, seller_name)
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        return conn.execute(
+            "SELECT title, price, currency, url, discount_pct, deal, silent, "
+            "skipped, sent_at, brand, seller_name FROM notification_log "
+            "WHERE sent_at >= ? ORDER BY sent_at DESC LIMIT ?",
+            (since_timestamp, limit),
+        ).fetchall()
+    except Exception:
+        print_exc()
+        return []
+    finally:
+        if conn:
+            conn.close()
