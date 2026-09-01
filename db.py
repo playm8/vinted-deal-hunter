@@ -7,8 +7,22 @@ DB_PATH = "./data/vinted_notifications.db"
 
 
 def get_db_connection():
+    """
+    Open a connection with the settings every caller needs.
+
+    busy_timeout matters most here. Five processes read and write this file,
+    and SQLite still allows a single writer at a time. With the default of 0,
+    the loser of a race raises immediately, and every function in this module
+    swallows exceptions and returns None — so a collision silently loses a
+    write. A timeout turns that race into a short wait instead.
+
+    Returns:
+        sqlite3.Connection: A configured connection the caller must close.
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA foreign_keys = ON")
+    # Not persistent, unlike journal_mode: it has to be set on every connection.
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 
@@ -33,7 +47,7 @@ def create_or_update_sqlite_db(db_path):
 def is_item_in_db_by_id(id):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT() FROM items WHERE item=?", (id,))
         if cursor.fetchone()[0]:
@@ -49,7 +63,7 @@ def is_item_in_db_by_id(id):
 def get_last_timestamp(query_id):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT last_item FROM queries WHERE id=?", (query_id,))
         result = cursor.fetchone()
@@ -67,7 +81,7 @@ def get_last_timestamp(query_id):
 def update_last_timestamp(query_id, timestamp):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE queries SET last_item=? WHERE id=?", (timestamp, query_id)
@@ -105,7 +119,7 @@ def add_item_to_db(id, title, query_id, price, timestamp, photo_url, currency="E
 def get_queries():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT id, query, last_item, query_name FROM queries")
         return cursor.fetchall()
@@ -119,7 +133,7 @@ def get_queries():
 def get_query_url(query_id):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT query FROM queries WHERE id=?", (query_id,))
         result = cursor.fetchone()
@@ -135,7 +149,7 @@ def get_query_url(query_id):
 def is_query_in_db(processed_query):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         # replace spaces in searched_text by % to match any query containing the searched text
 
@@ -156,7 +170,7 @@ def is_query_in_db(processed_query):
 def add_query_to_db(query, name=None):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         if name:
             cursor.execute(
@@ -178,7 +192,7 @@ def add_query_to_db(query, name=None):
 def get_query_id_by_rowid(rowid):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         query = f"SELECT id FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY ROWID) rn FROM queries) t WHERE rn={rowid}"
         cursor.execute(query)
@@ -197,7 +211,7 @@ def get_query_id_by_rowid(rowid):
 def remove_query_from_db(query_number):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         # Delete items associated with this query using query_id
         cursor.execute("DELETE FROM items WHERE query_id=?", (query_number,))
@@ -214,7 +228,7 @@ def remove_query_from_db(query_number):
 def remove_all_queries_from_db():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         # Delete all items first to maintain foreign key integrity
         cursor.execute("DELETE FROM items")
@@ -242,7 +256,7 @@ def update_query_in_db(query_id, query, name):
     """
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "UPDATE queries SET query=?, query_name=? WHERE id=?",
@@ -261,7 +275,7 @@ def update_query_in_db(query_id, query, name):
 def add_to_allowlist(country):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("INSERT INTO allowlist VALUES (?)", (country,))
         conn.commit()
@@ -275,7 +289,7 @@ def add_to_allowlist(country):
 def remove_from_allowlist(country):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM allowlist WHERE country=?", (country,))
         conn.commit()
@@ -289,7 +303,7 @@ def remove_from_allowlist(country):
 def get_allowlist():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM allowlist")
         # Get list of countries
@@ -306,7 +320,7 @@ def get_allowlist():
 def clear_allowlist():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM allowlist")
         conn.commit()
@@ -354,7 +368,7 @@ def get_secret(key):
 def get_parameter(key):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM parameters WHERE key=?", (key,))
         result = cursor.fetchone()
@@ -369,7 +383,7 @@ def get_parameter(key):
 def set_parameter(key, value):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("UPDATE parameters SET value=? WHERE key=?", (value, key))
         conn.commit()
@@ -383,7 +397,7 @@ def set_parameter(key, value):
 def get_all_parameters():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT key, value FROM parameters")
         return {row[0]: row[1] for row in cursor.fetchall()}
@@ -398,7 +412,7 @@ def get_all_parameters():
 def get_items(limit=50, query=None):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         if query:
             # Get the query_id for the given query
@@ -431,7 +445,7 @@ def get_items(limit=50, query=None):
 def get_total_items_count():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM items")
         return cursor.fetchone()[0]
@@ -446,7 +460,7 @@ def get_total_items_count():
 def get_total_queries_count():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM queries")
         return cursor.fetchone()[0]
@@ -461,7 +475,7 @@ def get_total_queries_count():
 def get_last_found_item():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT i.item, i.title, i.price, i.currency, i.timestamp, q.query, i.photo_url FROM items i JOIN queries q ON i.query_id = q.id ORDER BY i.timestamp DESC LIMIT 1"
@@ -478,7 +492,7 @@ def get_last_found_item():
 def get_items_per_day():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         # Get total items
@@ -515,7 +529,7 @@ def get_items_per_day():
 def get_price_reference(cache_key, max_age_seconds):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT median_price, currency, sample_size, updated_at, "
@@ -553,7 +567,7 @@ def set_price_reference(
 ):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO price_reference_cache "
@@ -588,7 +602,7 @@ def add_price_reference_history(
 ):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO price_reference_history "
@@ -608,7 +622,7 @@ def purge_price_reference_history(max_age_days):
     """Drop history older than the retention window, keeping the table small."""
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "DELETE FROM price_reference_history WHERE recorded_at < ?",
@@ -633,7 +647,7 @@ def get_price_trends(days=30, limit=20):
     """
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             """
@@ -677,7 +691,7 @@ def add_notification_log(
 ):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO notification_log (item_id, title, price, currency, "
@@ -718,7 +732,7 @@ def get_notification_summary(since_timestamp):
     """
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "SELECT COUNT(*), "
@@ -754,7 +768,7 @@ def purge_notification_log(max_age_days):
     """Drop notification history older than the retention window."""
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "DELETE FROM notification_log WHERE sent_at < ?",
@@ -780,7 +794,7 @@ def add_indexing_delay_sample(delay_minutes, keep_last):
     """
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO indexing_delay_samples (delay_minutes, observed_at) "
@@ -803,7 +817,7 @@ def add_indexing_delay_sample(delay_minutes, keep_last):
 def get_indexing_delay_samples():
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT delay_minutes FROM indexing_delay_samples")
         return [row[0] for row in cursor.fetchall() if row[0] is not None]
@@ -835,7 +849,7 @@ def ignore_seller(seller_id, seller_name):
 def _add_to_ignore_list(statement, values):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         conn.execute(statement, values)
         conn.commit()
         return True
@@ -860,7 +874,7 @@ def get_ignored_sellers():
 def _fetch_column(query):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         return [str(row[0]) for row in conn.execute(query)]
     except Exception:
         print_exc()
@@ -883,7 +897,7 @@ def unignore_seller(seller_id):
 def _delete_one(statement, values):
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(statement, values)
         conn.commit()
@@ -900,7 +914,7 @@ def get_ignored_lists():
     """Return muted brands and sellers for display, newest first."""
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         return {
             "brands": conn.execute(
                 "SELECT brand, ignored_at FROM ignored_brands ORDER BY ignored_at DESC"
@@ -922,7 +936,7 @@ def get_logged_item(item_id):
     """Look up what was notified for an item, to act on it later."""
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         cursor = conn.execute(
             "SELECT title, brand, seller_id, seller_name FROM notification_log "
             "WHERE item_id=? ORDER BY id DESC LIMIT 1",
@@ -965,6 +979,10 @@ def backup_database(directory, keep_last):
         os.makedirs(directory, exist_ok=True)
         stamp = strftime("%Y%m%d-%H%M%S")
         path = os.path.join(directory, f"vinted_notifications-{stamp}.db")
+        # The two connections are opened directly, not through
+        # get_db_connection: SQLite's backup API copies between two distinct
+        # connections, and the destination is a new file that needs none of
+        # the settings the source has.
         source = sqlite3.connect(DB_PATH)
         target = sqlite3.connect(path)
         source.backup(target)
@@ -1008,7 +1026,7 @@ def get_price_history_series(days=30, limit=6):
     """
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         rows = conn.execute(
             """
             SELECT brand,
