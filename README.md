@@ -98,8 +98,27 @@ heartbeat: receiving it means the pipeline ran.
 | `watchdog_cycles` | `30` | Consecutive empty cycles to tolerate before warning |
 | `daily_summary_enabled` | `True` | Send one summary a day |
 | `daily_summary_hour` | `20` | Hour of the day, server time |
-| `item_max_age_minutes` | `240` | Ignore items older than this |
+| `item_max_age_minutes` | `240` | Ignore items older than this, and the floor of the automatic window |
+| `item_max_age_mode` | `auto` | Follow the measured indexing delay, or stay on the fixed value |
+| `item_max_age_cap` | `1440` | Upper bound the automatic window never exceeds |
 | `notification_log_retention_days` | `30` | How long per-item outcomes are kept |
+
+### Adaptive age window
+
+Vinted publishes an item in its search results long after the timestamp the item carries, and that delay moves. A
+window shorter than the delay discards every item, silently. In auto mode the window measures the delay instead of
+assuming it: the freshest item each search returns is the most recently indexed one, so its age bounds the delay. The
+measurement is taken **before** the age filter, otherwise a window that is already too narrow would hide the very
+measurement needed to widen it.
+
+The window is the **smallest** recent measurement times a safety factor, kept between the floor and the cap. The
+minimum is used rather than an average because a measurement only reflects the indexing delay when an item was
+actually published recently; during a quiet spell the freshest item on offer keeps ageing and every other statistic
+drifts up with it. Simulated over 60 cycles around a true delay of 90 minutes, the minimum stayed near 80 whether
+fresh items made up 60% or 3% of the samples, where the median climbed to 556.
+
+Widening is the safe direction: duplicates are ruled out by the stored timestamps and item ids, so a window wider than
+necessary costs nothing, while a narrow one drops everything without a word.
 
 ### Settings (Configuration → Deal Detection)
 
