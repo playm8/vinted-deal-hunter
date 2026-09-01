@@ -82,6 +82,25 @@ showing a placeholder. Adding a language means adding one entry to
 `LANGUAGES` and one dictionary to `TRANSLATIONS` in
 `web_ui_plugin/translations.py`; nothing else has to change.
 
+### Monitoring
+
+A notifier that goes quiet is worse than one that fails loudly: Vinted publishes items in its search results long
+after the timestamp they carry, and when that delay grows past the age window every item is discarded, with no error
+anywhere. The watchdog watches for exactly that signature — searches returning results while nothing is ever kept —
+and warns after `watchdog_cycles` consecutive cycles. It reports once, and re-arms as soon as an item gets through.
+
+A daily summary reports what was found, notified, silenced and skipped, plus the best deal of the day. It doubles as a
+heartbeat: receiving it means the pipeline ran.
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `watchdog_enabled` | `True` | Warn when searches return results but nothing is kept |
+| `watchdog_cycles` | `30` | Consecutive empty cycles to tolerate before warning |
+| `daily_summary_enabled` | `True` | Send one summary a day |
+| `daily_summary_hour` | `20` | Hour of the day, server time |
+| `item_max_age_minutes` | `240` | Ignore items older than this |
+| `notification_log_retention_days` | `30` | How long per-item outcomes are kept |
+
 ### Settings (Configuration → Deal Detection)
 
 | Parameter | Default | Description |

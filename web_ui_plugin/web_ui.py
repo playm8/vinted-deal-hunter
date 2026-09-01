@@ -341,6 +341,16 @@ def update_config():
         "item_max_age_minutes", request.form.get("item_max_age_minutes", "240")
     )
 
+    # Update Monitoring parameters
+    watchdog_enabled = "watchdog_enabled" in request.form
+    db.set_parameter("watchdog_enabled", str(watchdog_enabled))
+    db.set_parameter("watchdog_cycles", request.form.get("watchdog_cycles", "30"))
+    daily_summary_enabled = "daily_summary_enabled" in request.form
+    db.set_parameter("daily_summary_enabled", str(daily_summary_enabled))
+    db.set_parameter(
+        "daily_summary_hour", request.form.get("daily_summary_hour", "20")
+    )
+
     # Update Deal Detection parameters
     price_reference_enabled = "price_reference_enabled" in request.form
     db.set_parameter("price_reference_enabled", str(price_reference_enabled))

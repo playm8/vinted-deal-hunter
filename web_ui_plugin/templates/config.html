@@ -96,6 +96,71 @@
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="card-header">
+                                    <h5 class="card-title mb-0">{{ t("Monitoring") }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    {% if params.watchdog_enabled == 'True' %}
+                                                    <input class="form-check-input" type="checkbox" id="watchdog_enabled"
+                                                           name="watchdog_enabled" checked>
+                                                    {% else %}
+                                                    <input class="form-check-input" type="checkbox" id="watchdog_enabled"
+                                                           name="watchdog_enabled">
+                                                    {% endif %}
+                                                    <label class="form-check-label" for="watchdog_enabled">
+                                                        {{ t("Alert when nothing is kept") }}
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">{{ t("Warns you when searches return results but every item is discarded, the signature of a silent breakdown.") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="watchdog_cycles" class="form-label">{{ t("Cycles Before Alerting") }}</label>
+                                                <input type="number" class="form-control" id="watchdog_cycles"
+                                                       name="watchdog_cycles" value="{{ params.watchdog_cycles }}">
+                                                <small class="form-text text-muted">{{ t("Empty cycles to tolerate before warning") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    {% if params.daily_summary_enabled == 'True' %}
+                                                    <input class="form-check-input" type="checkbox" id="daily_summary_enabled"
+                                                           name="daily_summary_enabled" checked>
+                                                    {% else %}
+                                                    <input class="form-check-input" type="checkbox" id="daily_summary_enabled"
+                                                           name="daily_summary_enabled">
+                                                    {% endif %}
+                                                    <label class="form-check-label" for="daily_summary_enabled">
+                                                        {{ t("Send a daily summary") }}
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">{{ t("One message a day with what was found, notified and skipped.") }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="daily_summary_hour" class="form-label">{{ t("Summary Hour") }}</label>
+                                                <input type="number" class="form-control" id="daily_summary_hour"
+                                                       name="daily_summary_hour" value="{{ params.daily_summary_hour }}" min="0" max="23">
+                                                <small class="form-text text-muted">{{ t("Hour of the day, server time") }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
                                     <h5 class="card-title mb-0">{{ t("Deal Detection") }}</h5>
                                 </div>
                                 <div class="card-body">
