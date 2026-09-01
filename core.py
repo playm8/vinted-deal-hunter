@@ -297,11 +297,20 @@ def process_items(queue):
     # Get the number of items per query from the database
     items_per_query = int(db.get_parameter("items_per_query"))
 
+    try:
+        max_age_minutes = int(float(db.get_parameter("item_max_age_minutes")))
+    except (TypeError, ValueError):
+        max_age_minutes = 240
+
     # for each keyword we parse data
     for query in all_queries:
         all_items = vinted.items.search(query[1], nbr_items=items_per_query)
-        # Filter to only include new items. This should reduce the amount of db calls.
-        data = [item for item in all_items if item.is_new_item()]
+        # Only consider recent items, to keep a brand new query from notifying
+        # a whole catalogue at once. The window has to stay well above Vinted's
+        # indexing delay: an item shows up in search results long after the
+        # timestamp it carries, and a window shorter than that delay silently
+        # drops every single item.
+        data = [item for item in all_items if item.is_new_item(max_age_minutes)]
         queue.put((data, query[0]))
         logger.info(f"Scraped {len(data)} items for query: {query[1]}")
 

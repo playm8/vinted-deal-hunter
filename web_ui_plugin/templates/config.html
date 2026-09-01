@@ -58,6 +58,14 @@
                                                        value="{{ params.query_refresh_delay }}">
                                                 <small class="form-text text-muted">{{ t("Delay between query refreshes in seconds") }}</small>
                                             </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="item_max_age_minutes" class="form-label">{{ t("Maximum Item Age (minutes)") }}</label>
+                                                <input type="number" class="form-control" id="item_max_age_minutes"
+                                                       name="item_max_age_minutes" value="{{ params.item_max_age_minutes }}">
+                                                <small class="form-text text-muted">{{ t("Ignore items older than this. Vinted publishes an item in its search results long after the timestamp it carries, so a window under two hours can drop every item.") }}</small>
+                                            </div>
+                                        </div>
                                         </div>
                                     </div>
                                     <div class="row">

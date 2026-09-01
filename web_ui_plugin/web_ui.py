@@ -337,6 +337,9 @@ def update_config():
         "query_refresh_delay", request.form.get("query_refresh_delay", "60")
     )
     db.set_parameter("banwords", request.form.get("banwords", ""))
+    db.set_parameter(
+        "item_max_age_minutes", request.form.get("item_max_age_minutes", "240")
+    )
 
     # Update Deal Detection parameters
     price_reference_enabled = "price_reference_enabled" in request.form
