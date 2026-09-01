@@ -23,6 +23,31 @@ def get_db_connection():
     conn.execute("PRAGMA foreign_keys = ON")
     # Not persistent, unlike journal_mode: it has to be set on every connection.
     conn.execute("PRAGMA busy_timeout = 5000")
+
+    # Write-ahead logging lets the readers — web UI, bot, RSS — stop blocking
+    # the writer. It is set here rather than in a migration because the pragma
+    # cannot run inside a transaction, and every migration is wrapped in one:
+    # there it raises, leaving the database in its previous mode.
+    #
+    # The setting is persistent, stored in the file header, so this only does
+    # real work the first time; afterwards it just reports the current mode,
+    # which costs a header read. It is asked on every connection rather than
+    # once per process because a process outlives the file it opened: the
+    # database can be recreated or restored underneath it.
+    try:
+        mode = conn.execute("PRAGMA journal_mode = WAL").fetchone()[0]
+        if str(mode).lower() == "wal":
+            # Safe under WAL only: a crash can lose the last commits but never
+            # corrupts the file, and it removes an fsync per write.
+            conn.execute("PRAGMA synchronous = NORMAL")
+        else:
+            print(
+                f"Could not enable WAL, still in {mode} mode. "
+                "A network filesystem does not support it."
+            )
+    except Exception:
+        print_exc()
+
     return conn
 
 
@@ -1048,6 +1073,25 @@ def get_price_history_series(days=30, limit=6):
     except Exception:
         print_exc()
         return []
+    finally:
+        if conn:
+            conn.close()
+
+
+def checkpoint():
+    """
+    Fold the write-ahead log back into the database file.
+
+    Harmless outside WAL, where it simply reports that nothing was moved.
+    Worth doing before a backup so the copy does not depend on a -wal file it
+    will not carry, and to keep that file from growing unbounded.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    except Exception:
+        print_exc()
     finally:
         if conn:
             conn.close()

@@ -432,6 +432,21 @@ waits for as long as Vinted's `Retry-After` header asks, and a 403 waits
 before starting a fresh session, with the delay doubling per attempt up to a
 minute.
 
+**Write-ahead logging.** Five processes share one SQLite file, and readers used
+to block the writer. The database runs in WAL mode, set when a connection is
+opened rather than in a migration — the pragma cannot run inside a transaction,
+and every migration is wrapped in one, where it raises and leaves the mode
+unchanged.
+
+This requires a filesystem with shared-memory support. A local disk is fine; a
+database kept on **NFS or CIFS** is not, and SQLite will report `disk I/O
+error`. If `./data` is mounted from a NAS, the mode is reported at startup and
+stays as it was rather than switching.
+
+The `-wal` and `-shm` files appear next to the database. They are part of it:
+copying only the `.db` would miss the most recent commits. Backups use SQLite's
+backup API, not a file copy, so they stay correct.
+
 **Backups.** The database holds every setting, query and price reference in a
 single file. A copy is written at each start through SQLite's own backup API,
 so a backup taken while the application is writing is still a valid database.
