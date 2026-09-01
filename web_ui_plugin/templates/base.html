@@ -211,7 +211,15 @@
         </nav>
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            {% block content %}{% endblock %}
+            {% if not authentication_enabled and not auth_warning_muted %}
+            <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+            <strong>{{ t("This interface is not password protected.") }}</strong>
+            {{ t("Anyone who can reach it can read and change your settings. Set WEB_UI_PASSWORD in the environment to require a password.") }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            {% block content %}
+{% endblock %}
         </main>
     </div>
 </div>

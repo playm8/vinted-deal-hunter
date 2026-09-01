@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from traceback import print_exc
 from time import time
@@ -314,6 +315,40 @@ def clear_allowlist():
     finally:
         if conn:
             conn.close()
+
+
+# Settings that are credentials rather than preferences. Each can be supplied
+# through the environment, which keeps it out of the database and therefore out
+# of the web interface, backups and any accidental commit.
+SECRET_PARAMETERS = {
+    "telegram_token": "TELEGRAM_TOKEN",
+    "telegram_chat_id": "TELEGRAM_CHAT_ID",
+    "proxy_list": "PROXY_LIST",
+}
+
+
+def secret_is_from_env(key):
+    """Return True when the environment supplies this setting."""
+    variable = SECRET_PARAMETERS.get(key)
+    return bool(variable and os.environ.get(variable))
+
+
+def get_secret(key):
+    """
+    Read a credential, preferring the environment over the database.
+
+    Args:
+        key (str): The parameter name.
+
+    Returns:
+        str | None: The value, from the environment when it defines one.
+    """
+    variable = SECRET_PARAMETERS.get(key)
+    if variable:
+        value = os.environ.get(variable)
+        if value:
+            return value
+    return get_parameter(key)
 
 
 def get_parameter(key):

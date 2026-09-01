@@ -33,9 +33,9 @@ class LeRobot:
 
         try:
 
-            self.bot = Bot(db.get_parameter("telegram_token"))
+            self.bot = Bot(db.get_secret("telegram_token"))
             self.app = (
-                ApplicationBuilder().token(db.get_parameter("telegram_token")).build()
+                ApplicationBuilder().token(db.get_secret("telegram_token")).build()
             )
 
             # Create the item queue to send to telegram
@@ -255,7 +255,7 @@ class LeRobot:
     ):
         try:
             async with self.bot:
-                chat_ID = str(db.get_parameter("telegram_chat_id"))
+                chat_ID = str(db.get_secret("telegram_chat_id"))
                 buttons = [[InlineKeyboardButton(text=text, url=url)]]
                 if buy_url and buy_text:
                     buttons.append([InlineKeyboardButton(text=buy_text, url=buy_url)])

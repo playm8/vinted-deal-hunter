@@ -363,6 +363,45 @@ pip install -r requirements.txt
 
 Then restart the application.
 
+## 🔐 Credentials
+
+The bot token, the chat id and the proxy list can be supplied through the
+environment, which keeps them out of the database and therefore out of the web
+interface, out of backups and out of any accidental commit:
+
+```yaml
+environment:
+  - TELEGRAM_TOKEN=123456:your-token
+  - TELEGRAM_CHAT_ID=987654
+```
+
+When a variable is set it wins over the stored value, and the interface shows
+the setting as managed elsewhere rather than letting you edit a value that
+would be ignored.
+
+Whatever the source, **the interface never sends a credential to the browser**.
+The field shows whether a value is set, not what it is: leave it empty to keep
+the current one, or type a single dash to clear it.
+
+### Protecting the interface
+
+The web interface has no authentication by default and shows a warning banner
+saying so. Setting a password enables HTTP authentication on every page:
+
+```yaml
+environment:
+  - WEB_UI_USER=admin        # optional, defaults to admin
+  - WEB_UI_PASSWORD=choose-one
+```
+
+Credentials are read from the environment only: storing them in the database
+would mean guarding the interface with a password it also holds.
+
+If access is already restricted another way — a VPN, a private network, a
+reverse proxy that authenticates — turn off *Warn when the interface has no
+password* in Configuration. A warning that cannot be silenced is one people
+stop reading.
+
 ## 🧪 Tests
 
 ```bash

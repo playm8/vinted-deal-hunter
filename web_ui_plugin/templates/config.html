@@ -154,6 +154,23 @@
                                                        name="watchdog_cycles" value="{{ params.watchdog_cycles }}">
                                                 <small class="form-text text-muted">{{ t("Empty cycles to tolerate before warning") }}</small>
                                             </div>
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    {% if params.web_ui_auth_warning != 'False' %}
+                                                    <input class="form-check-input" type="checkbox" id="web_ui_auth_warning"
+                                                           name="web_ui_auth_warning" checked>
+                                                    {% else %}
+                                                    <input class="form-check-input" type="checkbox" id="web_ui_auth_warning"
+                                                           name="web_ui_auth_warning">
+                                                    {% endif %}
+                                                    <label class="form-check-label" for="web_ui_auth_warning">
+                                                        {{ t("Warn when the interface has no password") }}
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">{{ t("Turn this off if access is already restricted another way, by a VPN or a private network.") }}</small>
+                                            </div>
+                                        </div>
                                         </div>
                                     </div>
                                     <div class="row">
@@ -311,15 +328,23 @@
                                     </div>
                                     <div class="mb-3">
                                         <label for="telegram_token" class="form-label">{{ t("Bot Token") }}</label>
-                                        <input type="text" class="form-control" id="telegram_token"
-                                               name="telegram_token" value="{{ params.telegram_token }}">
-                                        <small class="form-text text-muted">{{ t("Get this from BotFather") }}</small>
+                                        <input type="password" class="form-control" id="telegram_token"
+                                               name="telegram_token" value="" autocomplete="new-password"
+                                               {% if secrets_from_env.telegram_token %}disabled{% endif %}>
+                                        <small class="form-text text-muted">{{ t("Get this from BotFather") }}
+                                        {% if secrets_from_env.telegram_token %}<br><em>{{ t("Set by the environment; edit it there.") }}</em>
+                                        {% elif secrets_set.telegram_token %}<br><em>{{ t("A value is set. Leave empty to keep it, or type - to clear it.") }}</em>
+                                        {% endif %}</small>
                                     </div>
                                     <div class="mb-3">
                                         <label for="telegram_chat_id" class="form-label">{{ t("Chat ID") }}</label>
-                                        <input type="text" class="form-control" id="telegram_chat_id"
-                                               name="telegram_chat_id" value="{{ params.telegram_chat_id }}">
-                                        <small class="form-text text-muted">{{ t("The chat ID where notifications will be sent") }}</small>
+                                        <input type="password" class="form-control" id="telegram_chat_id"
+                                               name="telegram_chat_id" value="" autocomplete="new-password"
+                                               {% if secrets_from_env.telegram_chat_id %}disabled{% endif %}>
+                                        <small class="form-text text-muted">{{ t("The chat ID where notifications will be sent") }}
+                                        {% if secrets_from_env.telegram_chat_id %}<br><em>{{ t("Set by the environment; edit it there.") }}</em>
+                                        {% elif secrets_set.telegram_chat_id %}<br><em>{{ t("A value is set. Leave empty to keep it, or type - to clear it.") }}</em>
+                                        {% endif %}</small>
                                     </div>
                                 </div>
                             </div>
@@ -389,9 +414,13 @@
                                             <div class="mb-3">
                                                 <label for="proxy_list" class="form-label">{{ t("Proxy List") }}</label>
                                                 <textarea class="form-control" id="proxy_list" name="proxy_list"
-                                                          rows="3">{{ params.proxy_list }}</textarea>
+                                                          rows="3"
+                                                          {% if secrets_from_env.proxy_list %}disabled{% endif %}></textarea>
                                                 <small class="form-text text-muted">{{ t("List of proxies separated by semicolons (;)") }}<br>
-                                                    {{ t("Format: http://ip:port or ip:port") }}</small>
+                                                    {{ t("Format: http://ip:port or ip:port") }}
+                                                    {% if secrets_from_env.proxy_list %}<br><em>{{ t("Set by the environment; edit it there.") }}</em>
+                                        {% elif secrets_set.proxy_list %}<br><em>{{ t("A value is set. Leave empty to keep it, or type - to clear it.") }}</em>
+                                        {% endif %}</small>
                                             </div>
                                             <div class="mb-3">
                                                 <label for="proxy_list_link" class="form-label">{{ t("Proxy List Link") }}</label>
