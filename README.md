@@ -372,6 +372,39 @@ pip install -r requirements.txt
 
 Then restart the application.
 
+## 📉 Price drops
+
+An item used to be notified once and never looked at again, so a seller
+dropping their price by a third three days later went unnoticed — the moment
+most worth knowing about.
+
+Three things had to be lifted for that, not one. The stored query timestamp
+and the item id both reject a known item, and the age filter dropped it before
+it even crossed the process queue: an item keeps the timestamp of its
+*creation*, which a price change does not touch. Items are now all passed on,
+and the "new or known" decision happens where the database is reachable.
+
+A drop is measured against a **baseline that only moves when a drop is
+announced**, never against the last price seen. Otherwise a seller nudging a
+price down would alert on every cycle, and one moving it up and down would
+alert forever.
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `price_drop_enabled` | `True` | Watch known items for price drops |
+| `price_drop_min_pct` | `10` | Minimum drop, in percent |
+| `price_drop_min_amount` | `3` | Minimum drop, in currency units |
+| `price_drop_cooldown_hours` | `24` | Silence after announcing a drop |
+| `price_drop_max_per_cycle` | `5` | Most drops announced in one pass |
+
+Both thresholds must be met: 8 EUR to 7 EUR is a 12.5% drop, and the absolute
+one is what keeps cheap items quiet. Muted brands and sellers, banwords and the
+country allowlist all apply to drops as well — a muted brand returning through
+this path would be the quickest way to make the mute button untrustworthy.
+
+Known limitation: a search returns `items_per_query` results ordered by date,
+so an older listing is only seen while it is still in that window.
+
 ## 🔇 Muting from a notification
 
 Every item notification carries two buttons, **🔇 Brand** and **🔇 Seller**. A

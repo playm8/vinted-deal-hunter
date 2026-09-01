@@ -2,11 +2,13 @@ import re
 from datetime import datetime, timezone
 from datetime import time as dtime
 from html import escape
+from time import time
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
 
 import db
+import price_drop
 import price_reference
 from logger import get_logger
 from pyVintedVN import Vinted, requester
@@ -317,11 +319,16 @@ def process_items(queue):
         # indexing delay: an item shows up in search results long after the
         # timestamp it carries, and a window shorter than that delay silently
         # drops every single item.
-        data = [item for item in all_items if item.is_new_item(max_age_minutes)]
-        queue.put((data, query[0]))
-        logger.info(f"Scraped {len(data)} items for query: {query[1]}")
+        # Everything is passed on, including items already known: a listing
+        # whose price dropped keeps its original timestamp and would never get
+        # through an age filter. The filter still decides what counts as a new
+        # item, but that decision moves to clear_item_queue where the database
+        # is reachable.
+        fresh = [item for item in all_items if item.is_new_item(max_age_minutes)]
+        queue.put((all_items, query[0]))
+        logger.info(f"Scraped {len(fresh)} items for query: {query[1]}")
         total_found += len(all_items)
-        total_kept += len(data)
+        total_kept += len(fresh)
 
     # One outcome per cycle, not per query: one query still bringing items
     # through means the pipeline works, however many others are quiet.
@@ -557,7 +564,7 @@ def _raw_amount(item, key):
         return None
 
 
-def build_item_message(item, evaluation=None):
+def build_item_message(item, evaluation=None, drop=None):
     """
     Render the notification message for an item.
 
@@ -568,6 +575,8 @@ def build_item_message(item, evaluation=None):
         item (Item): The item to build a message for.
         evaluation (dict, optional): A price evaluation already computed for
             this item. Passing it avoids evaluating the same item twice.
+        drop (dict, optional): A price drop to announce, from
+            price_drop.evaluate_drop.
 
     Returns:
         str: The rendered message.
@@ -597,7 +606,15 @@ def build_item_message(item, evaluation=None):
         discount=evaluation["discount"],
         deal=evaluation["deal"],
     )
-    return message_template.format_map(values)
+    rendered = message_template.format_map(values)
+    if drop:
+        # Prefixed rather than templated: the drop is the reason for this
+        # message, and it must read first whatever the template looks like.
+        header = translate("Price drop: {old} to {new} ({percent}% off)").format(
+            old=drop["baseline"], new=drop["new_price"], percent=drop["drop_pct"]
+        )
+        rendered = f"📉 <b>{header}</b>\n\n{rendered}"
+    return rendered
 
 
 def seller_id(item):
@@ -633,7 +650,7 @@ def is_muted(item, ignored_brands, ignored_sellers):
     return seller_id(item) in ignored_sellers if ignored_sellers else False
 
 
-def log_item_outcome(item, evaluation, silent, skipped):
+def log_item_outcome(item, evaluation, silent, skipped, kind="new"):
     """Record what was decided for an item, for the daily summary."""
     try:
         db.add_notification_log(
@@ -649,6 +666,7 @@ def log_item_outcome(item, evaluation, silent, skipped):
             item.brand_title,
             seller_id(item),
             seller_name(item),
+            kind,
         )
     except Exception as e:
         logger.debug(f"Could not log outcome for item {item.id}: {e}")
@@ -679,6 +697,38 @@ def emit_system_messages(new_items_queue):
             )
 
 
+def rejection_reason(item, allowlist, ignored_brands, ignored_sellers, banwords_str):
+    """
+    Return why an item must not be notified, or None when it may be.
+
+    Gathered in one place so both a first sighting and a price drop go through
+    the same filters. A muted brand reappearing through the price-drop branch
+    would be the most visible way to break trust in the mute button.
+
+    Args:
+        item (Item): The item to check.
+        allowlist (list | int): Countries allowed, or 0 when unrestricted.
+        ignored_brands (set): Lowercased muted brands.
+        ignored_sellers (set): Muted seller ids.
+        banwords_str (str): Configured banwords.
+
+    Returns:
+        str | None: "allowlist", "muted", "banword", or None.
+    """
+    if allowlist != 0:
+        try:
+            country = get_user_country(item.raw_data["user"]["id"])
+        except (KeyError, TypeError):
+            country = None
+        if country not in (allowlist + ["XX"]):
+            return "allowlist"
+    if is_muted(item, ignored_brands, ignored_sellers):
+        return "muted"
+    if banwords_str and contains_banwords(item.title, banwords_str):
+        return "banword"
+    return None
+
+
 def clear_item_queue(items_queue, new_items_queue):
     """
     Process items from the items_queue.
@@ -692,63 +742,83 @@ def clear_item_queue(items_queue, new_items_queue):
         query_url = db.get_query_url(query_id)
         ignored_brands = {b.lower() for b in db.get_ignored_brands()}
         ignored_sellers = set(db.get_ignored_sellers())
-        for item in reversed(data):
+        allowlist = db.get_allowlist()
+        max_age_minutes = get_item_max_age()
+        drops_announced = 0
 
-            # If already in db, pass
-            last_query_timestamp = db.get_last_timestamp(query_id)
-            if (
-                last_query_timestamp is not None
-                and last_query_timestamp >= item.raw_timestamp
-            ):
-                pass
-            # In case of multiple queries, we need to check if the item is already in the db
-            elif db.is_item_in_db_by_id(item.id) is True:
-                # We update the timestamp
+        for item in reversed(data):
+            reason = rejection_reason(
+                item, allowlist, ignored_brands, ignored_sellers, banwords_str
+            )
+            if reason:
                 db.update_last_timestamp(query_id, item.raw_timestamp)
-                pass
-            # If there's an allowlist and
-            # If the user's country is not in the allowlist, we just update the timestamp
-            elif db.get_allowlist() != 0 and (
-                get_user_country(item.raw_data["user"]["id"])
-            ) not in (db.get_allowlist() + ["XX"]):
+                if reason == "muted":
+                    logger.info(f"Item {item.id} muted by brand or seller")
+                continue
+
+            known = db.get_item_row(item.id)
+            if known is not None:
+                # Already seen. The only reason to look again is the price.
                 db.update_last_timestamp(query_id, item.raw_timestamp)
-                pass
-            # Muted from a previous notification: recorded, never sent.
-            elif is_muted(item, ignored_brands, ignored_sellers):
-                db.update_last_timestamp(query_id, item.raw_timestamp)
-                logger.info(f"Item {item.id} muted by brand or seller")
-            # Check if the item title contains any banwords
-            elif banwords_str and contains_banwords(item.title, banwords_str):
-                # If it contains banwords, just update the timestamp and skip
-                db.update_last_timestamp(query_id, item.raw_timestamp)
-                pass
-            else:
-                evaluation = price_reference.evaluate(item, query_url)
-                # Items priced too far above the market are recorded but not
-                # notified, so that the feed stays quiet instead of noisy.
-                if not price_reference.should_notify(evaluation):
-                    db.update_last_timestamp(query_id, item.raw_timestamp)
-                    logger.info(f"Item {item.id} skipped, {evaluation['discount']}")
-                    log_item_outcome(item, evaluation, silent=False, skipped=True)
+                if drops_announced >= price_drop.max_per_cycle():
                     continue
-                # We create the message
-                content = build_item_message(item, evaluation)
-                silent = price_reference.is_silent(evaluation)
-                # add the item to the queue
+                new_price = price_drop.to_price(item.price)
+                if new_price is None:
+                    continue
+                drop = price_drop.evaluate_drop(known, new_price, time())
+                if drop is None:
+                    # Record the sighting without moving the baseline.
+                    db.record_item_price(item.id, new_price, time())
+                    continue
+                evaluation = price_reference.evaluate(item, query_url)
+                content = build_item_message(item, evaluation, drop=drop)
                 new_items_queue.put(
-                    (content, item.url, "Open Vinted", None, None, silent, item.id)
+                    (content, item.url, "Open Vinted", None, None, False, item.id)
                 )
-                log_item_outcome(item, evaluation, silent=silent, skipped=False)
-                # Add the item to the db
-                db.add_item_to_db(
-                    id=item.id,
-                    timestamp=item.raw_timestamp,
-                    price=item.price,
-                    title=item.title,
-                    photo_url=item.photo,
-                    query_id=query_id,
-                    currency=item.currency,
+                db.record_item_price(
+                    item.id, new_price, time(), baseline=new_price, notified_at=time()
                 )
+                log_item_outcome(
+                    item, evaluation, silent=False, skipped=False, kind="price_drop"
+                )
+                drops_announced += 1
+                logger.info(
+                    f"Item {item.id} dropped {drop['drop_pct']}% "
+                    f"({drop['baseline']} to {drop['new_price']})"
+                )
+                continue
+
+            # Never seen. Only recent listings are worth a first notification,
+            # otherwise a newly added query would announce a whole catalogue.
+            if not item.is_new_item(max_age_minutes):
+                continue
+
+            evaluation = price_reference.evaluate(item, query_url)
+            # Items priced too far above the market are recorded but not
+            # notified, so that the feed stays quiet instead of noisy.
+            if not price_reference.should_notify(evaluation):
+                db.update_last_timestamp(query_id, item.raw_timestamp)
+                logger.info(f"Item {item.id} skipped, {evaluation['discount']}")
+                log_item_outcome(item, evaluation, silent=False, skipped=True)
+                continue
+            # We create the message
+            content = build_item_message(item, evaluation)
+            silent = price_reference.is_silent(evaluation)
+            # add the item to the queue
+            new_items_queue.put(
+                (content, item.url, "Open Vinted", None, None, silent, item.id)
+            )
+            log_item_outcome(item, evaluation, silent=silent, skipped=False)
+            # Add the item to the db
+            db.add_item_to_db(
+                id=item.id,
+                timestamp=item.raw_timestamp,
+                price=item.price,
+                title=item.title,
+                photo_url=item.photo,
+                query_id=query_id,
+                currency=item.currency,
+            )
 
 
 def contains_banwords(title, banwords_str):

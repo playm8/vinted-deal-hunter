@@ -126,8 +126,25 @@ def add_item_to_db(id, title, query_id, price, timestamp, photo_url, currency="E
         cursor = conn.cursor()
         # Insert into db the id and the query_id related to the item
         cursor.execute(
-            "INSERT INTO items (item, title, price, currency, timestamp, photo_url, query_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (id, title, price, currency, timestamp, photo_url, query_id),
+            "INSERT INTO items (item, title, price, currency, timestamp, "
+            "photo_url, query_id, first_price, last_price, last_seen, "
+            "drop_baseline_price) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                id,
+                title,
+                price,
+                currency,
+                timestamp,
+                photo_url,
+                query_id,
+                # A drop is measured against the price first seen, until a
+                # drop is announced and moves the baseline down.
+                price,
+                price,
+                time(),
+                price,
+            ),
         )
         # Update the last item for the query
         cursor.execute(
@@ -1124,6 +1141,73 @@ def get_notification_log(limit=100, since_timestamp=0):
     except Exception:
         print_exc()
         return []
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_item_row(item_id):
+    """
+    Return the stored price history of an item, or None when unknown.
+
+    Reads the row rather than counting it, so the caller can compare prices
+    without a second query. Served by idx_items_item.
+
+    Args:
+        item_id: The Vinted item id.
+
+    Returns:
+        dict | None: first_price, last_price, drop_baseline_price,
+            drop_notified_at.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        row = conn.execute(
+            "SELECT first_price, last_price, drop_baseline_price, "
+            "drop_notified_at FROM items WHERE item=? LIMIT 1",
+            (item_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "first_price": row[0],
+            "last_price": row[1],
+            "drop_baseline_price": row[2],
+            "drop_notified_at": row[3],
+        }
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+
+def record_item_price(item_id, price, now, baseline=None, notified_at=None):
+    """
+    Update what is known about an item's price.
+
+    The baseline and the notification time are only written when passed, so a
+    routine sighting updates the last price without moving the reference a
+    drop is measured against.
+    """
+    conn = None
+    try:
+        conn = get_db_connection()
+        fields = ["last_price = ?", "last_seen = ?"]
+        values = [price, now]
+        if baseline is not None:
+            fields.append("drop_baseline_price = ?")
+            values.append(baseline)
+        if notified_at is not None:
+            fields.append("drop_notified_at = ?")
+            values.append(notified_at)
+        values.append(item_id)
+        conn.execute(f"UPDATE items SET {', '.join(fields)} WHERE item = ?", values)
+        conn.commit()
+    except Exception:
+        print_exc()
     finally:
         if conn:
             conn.close()

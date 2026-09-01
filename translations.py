@@ -259,6 +259,7 @@ TRANSLATIONS = {
         "This usually means Vinted now publishes items later than the age window allows.": "Cela signifie généralement que Vinted publie désormais les articles plus tard que ne le permet la fenêtre d'âge.",
         "Raise Maximum Item Age in Configuration.": "Augmentez l'âge maximum des articles dans la configuration.",
         "Daily summary": "Résumé quotidien",
+        "Price drop: {old} to {new} ({percent}% off)": "Baisse de prix : {old} → {new} (−{percent} %)",
         "Items found: {count}": "Articles trouvés : {count}",
         "Notified: {count} (of which {silent} silent)": "Notifiés : {count} (dont {silent} en silencieux)",
         "Skipped: {count}": "Ignorés : {count}",
