@@ -1,4 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import (
+    Flask,
+    Response,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+import hmac
 import db
 import core
 import price_reference
@@ -22,6 +32,37 @@ app = Flask(
 )
 
 
+# Optional HTTP authentication. Credentials come from the environment only:
+# putting them in the database would mean the interface guards itself with a
+# password it also displays. Unset means no authentication, which keeps
+# existing installs working unchanged.
+WEB_UI_USER = os.environ.get("WEB_UI_USER", "admin")
+WEB_UI_PASSWORD = os.environ.get("WEB_UI_PASSWORD", "")
+
+
+def authentication_enabled():
+    return bool(WEB_UI_PASSWORD)
+
+
+@app.before_request
+def require_authentication():
+    """Ask for credentials when the environment defines a password."""
+    if not authentication_enabled():
+        return None
+    auth = request.authorization
+    if (
+        auth
+        and hmac.compare_digest(auth.username or "", WEB_UI_USER)
+        and hmac.compare_digest(auth.password or "", WEB_UI_PASSWORD)
+    ):
+        return None
+    return Response(
+        "Authentication required",
+        401,
+        {"WWW-Authenticate": 'Basic realm="Vinted Deal Hunter"'},
+    )
+
+
 @app.context_processor
 def inject_translations():
     """Make the translation helper and language list available to templates."""
@@ -29,6 +70,7 @@ def inject_translations():
         "t": translate,
         "languages": LANGUAGES,
         "js_strings": js_translations(),
+        "authentication_enabled": authentication_enabled(),
     }
 
 # Secret key for session management
@@ -313,7 +355,39 @@ def items():
 @app.route("/config")
 def config():
     params = db.get_all_parameters()
-    return render_template("config.html", params=params)
+    # Credentials are never sent to the browser: the page shows whether one is
+    # set, not what it is.
+    secrets_set = {}
+    for key in db.SECRET_PARAMETERS:
+        secrets_set[key] = bool(params.get(key)) or db.secret_is_from_env(key)
+        params[key] = ""
+    return render_template(
+        "config.html",
+        params=params,
+        secrets_set=secrets_set,
+        secrets_from_env={k: db.secret_is_from_env(k) for k in db.SECRET_PARAMETERS},
+    )
+
+
+def save_secret(key, submitted):
+    """
+    Store a credential, treating an empty field as "leave it alone".
+
+    The browser never receives the current value, so an empty field means the
+    user did not retype it, not that they want it cleared. Clearing is done by
+    submitting a single dash.
+
+    Args:
+        key (str): The parameter name.
+        submitted (str): What the form sent.
+    """
+    if db.secret_is_from_env(key):
+        # The environment wins, writing to the database would be misleading.
+        return
+    submitted = (submitted or "").strip()
+    if not submitted:
+        return
+    db.set_parameter(key, "" if submitted == "-" else submitted)
 
 
 @app.route("/update_config", methods=["POST"])
@@ -321,8 +395,8 @@ def update_config():
     # Update Telegram parameters
     telegram_enabled = "telegram_enabled" in request.form
     db.set_parameter("telegram_enabled", str(telegram_enabled))
-    db.set_parameter("telegram_token", request.form.get("telegram_token", ""))
-    db.set_parameter("telegram_chat_id", request.form.get("telegram_chat_id", ""))
+    save_secret("telegram_token", request.form.get("telegram_token", ""))
+    save_secret("telegram_chat_id", request.form.get("telegram_chat_id", ""))
 
     # Update RSS parameters
     rss_enabled = "rss_enabled" in request.form
@@ -382,7 +456,7 @@ def update_config():
     # Update Proxy parameters
     check_proxies = "check_proxies" in request.form
     db.set_parameter("check_proxies", str(check_proxies))
-    db.set_parameter("proxy_list", request.form.get("proxy_list", ""))
+    save_secret("proxy_list", request.form.get("proxy_list", ""))
     db.set_parameter("proxy_list_link", request.form.get("proxy_list_link", ""))
 
     # Update Advanced parameters
@@ -412,8 +486,8 @@ def control_process(process_name, action):
                 )
 
             # Check if telegram_token and telegram_chat_id are set
-            telegram_token = db.get_parameter("telegram_token")
-            telegram_chat_id = db.get_parameter("telegram_chat_id")
+            telegram_token = db.get_secret("telegram_token")
+            telegram_chat_id = db.get_secret("telegram_chat_id")
             if not telegram_token or not telegram_chat_id:
                 return jsonify(
                     {

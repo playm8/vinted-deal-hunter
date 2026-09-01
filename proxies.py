@@ -141,7 +141,7 @@ def get_random_proxy() -> Optional[str]:
     all_proxies = []
 
     # Check if PROXY_LIST is configured in the database
-    proxy_list = db.get_parameter("proxy_list")
+    proxy_list = db.get_secret("proxy_list")
     if proxy_list:
         # If PROXY_LIST is a string with multiple proxies separated by semicolons
         all_proxies = [p.strip() for p in proxy_list.split(";") if p.strip()]

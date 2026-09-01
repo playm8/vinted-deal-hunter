@@ -144,8 +144,8 @@ def monitor_processes(items_queue, telegram_queue, rss_queue):
     # Check telegram process status
     telegram_should_run = db.get_parameter("telegram_process_running") == "True"
     # Check if the telegram token and chat ID are set
-    telegram_token = db.get_parameter("telegram_token")
-    telegram_chat_id = db.get_parameter("telegram_chat_id")
+    telegram_token = db.get_secret("telegram_token")
+    telegram_chat_id = db.get_secret("telegram_chat_id")
     if not telegram_token or not telegram_chat_id:
         telegram_should_run = False
     telegram_is_running = telegram_process is not None and telegram_process.is_alive()
