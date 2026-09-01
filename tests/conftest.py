@@ -14,6 +14,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import core
 import db  # noqa: E402
 
 MIGRATIONS_DIR = os.path.join(
@@ -50,6 +51,9 @@ def database(tmp_path, monkeypatch):
     db.create_or_update_sqlite_db(INITIAL_SQL)
     for migration in migration_chain():
         db.create_or_update_sqlite_db(os.path.join(MIGRATIONS_DIR, migration))
+    # The scraper remembers the previous cycle's results in memory, so without
+    # this a test would inherit whatever the last one left behind.
+    core._previous_result_ids.clear()
     return db
 
 

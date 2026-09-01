@@ -50,10 +50,43 @@ def test_measurement_survives_a_window_that_keeps_nothing(database, item):
     # Without this the system could never recover on its own: a window too
     # narrow would hide the measurement needed to widen it.
     database.set_parameter("item_max_age_minutes", "20")
-    items = [item(age_minutes=90), item(age_minutes=200)]
-    assert [i for i in items if i.created_at_ts and False] == []
-    core.record_indexing_delay(items)
-    assert database.get_indexing_delay_samples()
+    core.record_indexing_delay([item(id=1, age_minutes=200)], query_id=1)
+    core.record_indexing_delay(
+        [item(id=1, age_minutes=200), item(id=2, age_minutes=90)], query_id=1
+    )
+    assert database.get_indexing_delay_samples() == [90.0]
+
+
+def test_the_first_cycle_of_a_query_measures_nothing(database, item):
+    # Every result looks new on the first cycle, back catalogue included, so
+    # there is nothing to learn from it.
+    core.record_indexing_delay([item(id=1, age_minutes=4000)], query_id=1)
+    assert database.get_indexing_delay_samples() == []
+
+
+def test_unchanged_results_do_not_produce_a_sample(database, item):
+    # The regression this guards: re-measuring an item that was already there
+    # only records it ageing, which pushes every sample up by the elapsed time
+    # and drives the window to its cap on a quiet query.
+    core.record_indexing_delay([item(id=1, age_minutes=200)], query_id=1)
+    core.record_indexing_delay([item(id=1, age_minutes=201)], query_id=1)
+    core.record_indexing_delay([item(id=1, age_minutes=202)], query_id=1)
+    assert database.get_indexing_delay_samples() == []
+
+
+def test_each_query_tracks_its_own_results(database, item):
+    # A shared set would make one query's results look like newcomers to
+    # another, measuring an age that belongs to neither.
+    core.record_indexing_delay([item(id=1, age_minutes=300)], query_id=1)
+    core.record_indexing_delay([item(id=1, age_minutes=300)], query_id=2)
+    assert database.get_indexing_delay_samples() == []
+
+
+def test_a_query_that_goes_empty_then_returns_measures_again(database, item):
+    core.record_indexing_delay([item(id=1, age_minutes=300)], query_id=1)
+    core.record_indexing_delay([], query_id=1)
+    core.record_indexing_delay([item(id=1, age_minutes=302)], query_id=1)
+    assert database.get_indexing_delay_samples() == [302.0]
 
 
 def test_rolling_window_keeps_only_the_last_samples(database):
