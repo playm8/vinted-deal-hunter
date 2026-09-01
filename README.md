@@ -370,11 +370,17 @@ pip install -r requirements-dev.txt
 python -m pytest tests/ -q
 ```
 
-Or without installing anything locally:
+Or without installing anything locally, against the built image:
 
 ```bash
-docker compose run --rm --entrypoint sh vinted-deal-hunter -c "pip install -q pytest && python -m pytest tests/ -q"
+docker build -t vinted-deal-hunter .
+docker run --rm -v "$PWD":/app -w /app --entrypoint sh vinted-deal-hunter \
+  -c "pip install -q pytest && python -m pytest tests/ -q"
 ```
+
+Not `docker compose run`: the compose service mounts the application read-only
+and installing pytest into it fails, besides starting a second stack next to a
+running one.
 
 The suite covers the logic that decides what you get notified about: keyword
 extraction across languages, outlier filtering, condition grouping, the
