@@ -1,12 +1,14 @@
 import json
-import proxies
-import sys
 import os
-import db
 import random
+import sys
 from time import sleep
+
 import requests
 from requests.exceptions import HTTPError
+
+import db
+import proxies
 
 # Add the parent directory to sys.path to import logger
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

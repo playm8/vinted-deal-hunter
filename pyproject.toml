@@ -22,12 +22,24 @@ select = [
     "UP",  # outdated syntax for the Python version we target
 ]
 ignore = [
-    "E501",  # line length is black's job, and it disagrees on comments
+    "E501",   # line length is black's job, and it disagrees on comments
+    # Type-annotation and datetime modernisations. They touch working code —
+    # much of it the vendored pyVintedVN — for no functional gain, and every
+    # edit there widens the gap with the library upstream.
+    "UP006",
+    "UP017",
+    "UP035",
+    "UP045",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # Fixtures and helpers are imported for their side effects.
 "tests/*" = ["F401"]
+# The database has to exist before core is imported, so these imports come
+# after the initialisation code on purpose.
+"vinted_notifications.py" = ["E402"]
+# conftest puts the project root on sys.path before importing from it.
+"tests/conftest.py" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,3 +1,9 @@
+import hmac
+import os
+import re
+from datetime import datetime
+from urllib.parse import parse_qs, urlparse
+
 from flask import (
     Flask,
     Response,
@@ -8,14 +14,10 @@ from flask import (
     request,
     url_for,
 )
-import hmac
-import db
+
 import core
+import db
 import price_reference
-import os
-import re
-from urllib.parse import urlparse, parse_qs
-from datetime import datetime
 from logger import get_logger
 from translations import LANGUAGES, js_translations, translate
 from web_ui_plugin.sparkline import sparkline
@@ -627,7 +629,7 @@ def api_logs():
     total_matching_entries = 0
 
     try:
-        with open(log_file_path, "r", encoding="utf-8") as file:
+        with open(log_file_path, encoding="utf-8") as file:
             # Read all lines from the file
             all_lines = file.readlines()
 

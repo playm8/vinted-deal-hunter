@@ -13,7 +13,6 @@ triggers a single extra catalog request.
 
 import re
 import statistics
-import time
 from urllib.parse import parse_qsl, quote_plus, urlparse
 
 import db
