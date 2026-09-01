@@ -340,6 +340,9 @@ def update_config():
     db.set_parameter(
         "item_max_age_minutes", request.form.get("item_max_age_minutes", "240")
     )
+    item_max_age_mode = "auto" if "item_max_age_mode" in request.form else "fixed"
+    db.set_parameter("item_max_age_mode", item_max_age_mode)
+    db.set_parameter("item_max_age_cap", request.form.get("item_max_age_cap", "1440"))
 
     # Update Monitoring parameters
     watchdog_enabled = "watchdog_enabled" in request.form

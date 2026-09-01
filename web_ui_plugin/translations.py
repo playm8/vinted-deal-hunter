@@ -71,6 +71,13 @@ TRANSLATIONS = {
             "Délai entre deux rafraîchissements, en secondes",
         "Banwords": "Mots exclus",
         "Maximum Item Age (minutes)": "Âge maximum des articles (minutes)",
+        "Adapt the age window automatically": "Adapter automatiquement la fenêtre d'âge",
+        "Follows the indexing delay measured on Vinted, using the value above as a floor.":
+            "Suit le délai d'indexation mesuré sur Vinted, en utilisant la valeur ci-dessus comme plancher.",
+        "Currently": "Actuellement",
+        "Age Window Cap (minutes)": "Plafond de la fenêtre d'âge (minutes)",
+        "Upper bound the automatic window will never exceed":
+            "Limite haute que la fenêtre automatique ne dépassera jamais",
         "Ignore items older than this. Vinted publishes an item in its search results long after the timestamp it carries, so a window under two hours can drop every item.":
             "Ignorer les articles plus anciens que cette durée. Vinted publie un article dans ses résultats de recherche bien après l'horodatage qu'il porte : une fenêtre inférieure à deux heures peut écarter tous les articles.",
         "Words to filter out from item titles. Items with these words in their titles will be ignored.":

@@ -702,3 +702,48 @@ def purge_notification_log(max_age_days):
     finally:
         if conn:
             conn.close()
+
+
+def add_indexing_delay_sample(delay_minutes, keep_last):
+    """
+    Record how old the freshest item of a cycle was, keeping a rolling window.
+
+    Args:
+        delay_minutes (float): Age of the freshest item returned.
+        keep_last (int): How many samples to retain.
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO indexing_delay_samples (delay_minutes, observed_at) "
+            "VALUES (?, ?)",
+            (delay_minutes, time()),
+        )
+        cursor.execute(
+            "DELETE FROM indexing_delay_samples WHERE id NOT IN "
+            "(SELECT id FROM indexing_delay_samples ORDER BY id DESC LIMIT ?)",
+            (keep_last,),
+        )
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_indexing_delay_samples():
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT delay_minutes FROM indexing_delay_samples")
+        return [row[0] for row in cursor.fetchall() if row[0] is not None]
+    except Exception:
+        print_exc()
+        return []
+    finally:
+        if conn:
+            conn.close()

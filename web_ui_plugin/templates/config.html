@@ -65,6 +65,36 @@
                                                        name="item_max_age_minutes" value="{{ params.item_max_age_minutes }}">
                                                 <small class="form-text text-muted">{{ t("Ignore items older than this. Vinted publishes an item in its search results long after the timestamp it carries, so a window under two hours can drop every item.") }}</small>
                                             </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check form-switch">
+                                                    {% if params.item_max_age_mode == 'auto' %}
+                                                    <input class="form-check-input" type="checkbox" id="item_max_age_mode"
+                                                           name="item_max_age_mode" checked>
+                                                    {% else %}
+                                                    <input class="form-check-input" type="checkbox" id="item_max_age_mode"
+                                                           name="item_max_age_mode">
+                                                    {% endif %}
+                                                    <label class="form-check-label" for="item_max_age_mode">
+                                                        {{ t("Adapt the age window automatically") }}
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    {{ t("Follows the indexing delay measured on Vinted, using the value above as a floor.") }}
+                                                    {% if params.item_max_age_effective %}
+                                                    <br><strong>{{ t("Currently") }}: {{ params.item_max_age_effective }} min</strong>
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="item_max_age_cap" class="form-label">{{ t("Age Window Cap (minutes)") }}</label>
+                                                <input type="number" class="form-control" id="item_max_age_cap"
+                                                       name="item_max_age_cap" value="{{ params.item_max_age_cap }}">
+                                                <small class="form-text text-muted">{{ t("Upper bound the automatic window will never exceed") }}</small>
+                                            </div>
+                                        </div>
                                         </div>
                                         </div>
                                     </div>
