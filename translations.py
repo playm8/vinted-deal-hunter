@@ -178,6 +178,7 @@ TRANSLATIONS = {
         "Process Status": "État des processus",
         "Recent Items": "Articles récents",
         "Price Trends": "Tendances de prix",
+        "Median price over time": "Prix médian dans le temps",
         "no category": "sans catégorie",
         "Add a category to this Vinted search to get more reliable price references":
             "Ajoutez une catégorie à cette recherche Vinted pour obtenir des références de prix plus fiables",
@@ -252,6 +253,34 @@ TRANSLATIONS = {
             "recherches ? Cette action est irréversible.",
         "Remove All": "Tout supprimer",
         "My search": "Ma recherche",
+        # Messages returned by the pipeline, shown in the interface and sent
+        # by the bot
+        "Query already exists.": "Cette recherche existe déjà.",
+        "Query added.": "Recherche ajoutée.",
+        "All queries removed.": "Toutes les recherches ont été supprimées.",
+        "Query removed.": "Recherche supprimée.",
+        "Invalid number.": "Numéro invalide.",
+        "Query updated.": "Recherche mise à jour.",
+        "Failed to update query.": "Échec de la mise à jour de la recherche.",
+        "Invalid country code": "Code pays invalide",
+        "Country added.": "Pays ajouté.",
+        "Country removed.": "Pays supprimé.",
+        # Watchdog and daily summary
+        "No item kept for {minutes} minutes": "Aucun article retenu depuis {minutes} minutes",
+        "Searches are returning results, but every item is being discarded.":
+            "Les recherches renvoient des résultats, mais tous les articles sont écartés.",
+        "This usually means Vinted now publishes items later than the age window allows.":
+            "Cela signifie généralement que Vinted publie désormais les articles plus tard que ne le permet la fenêtre d'âge.",
+        "Raise Maximum Item Age in Configuration.":
+            "Augmentez l'âge maximum des articles dans la configuration.",
+        "Daily summary": "Résumé quotidien",
+        "Items found: {count}": "Articles trouvés : {count}",
+        "Notified: {count} (of which {silent} silent)":
+            "Notifiés : {count} (dont {silent} en silencieux)",
+        "Skipped: {count}": "Ignorés : {count}",
+        "Best deal:": "Meilleure affaire :",
+        "{price} {currency} — {percent}% below market":
+            "{price} {currency} — {percent}% sous le prix du marché",
         # Flash messages
         "Configuration updated": "Configuration mise à jour",
         "Query added": "Recherche ajoutée",

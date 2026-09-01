@@ -75,6 +75,11 @@ all Vinted text is HTML-escaped before being sent to Telegram.
 
 ### Interface language
 
+Messages produced by the pipeline itself — a query rejected, a country added,
+the watchdog alert, the daily summary — follow the selected language too, in
+the interface and in the bot alike.
+
+
 The web interface is available in English and French, switchable from
 Configuration → System Settings → Language. English strings are used as
 translation keys, so an untranslated string falls back to English instead of
@@ -147,6 +152,10 @@ spread 42%).
 
 Titles are tokenised with stopwords for English, French, Italian, German, Spanish, Dutch and Polish, since listings
 from every Vinted country show up in a single country's search results.
+
+The dashboard draws a trend line per brand from that history, as inline SVG computed server-side: a chart of a few
+dozen points does not justify pulling a library over a CDN, and the page keeps working on a machine with no internet
+access.
 
 Past references are kept in `price_reference_history` and summarised per brand on the dashboard, so a brand getting
 cheaper or more expensive becomes visible over time. Entries older than the retention window are dropped at startup.

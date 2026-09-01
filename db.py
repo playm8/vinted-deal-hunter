@@ -960,3 +960,46 @@ def backup_database(directory, keep_last):
             source.close()
         if target:
             target.close()
+
+
+def get_price_history_series(days=30, limit=6):
+    """
+    Return a daily median per brand, for drawing a trend line.
+
+    Only brands with enough distinct days are returned, since two points do
+    not make a trend.
+
+    Args:
+        days (int): How far back to look.
+        limit (int): How many brands to return.
+
+    Returns:
+        list[tuple]: (brand, [(day, median), ...]) newest last.
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            """
+            SELECT brand,
+                   date(recorded_at, 'unixepoch') AS day,
+                   ROUND(AVG(median_price), 2)
+            FROM price_reference_history
+            WHERE recorded_at >= ? AND brand IS NOT NULL AND brand != ''
+            GROUP BY brand, day
+            ORDER BY brand, day
+            """,
+            (time() - days * 86400,),
+        ).fetchall()
+        series = {}
+        for brand, day, median in rows:
+            series.setdefault(brand, []).append((day, median))
+        usable = [(b, p) for b, p in series.items() if len(p) >= 2]
+        usable.sort(key=lambda item: len(item[1]), reverse=True)
+        return usable[:limit]
+    except Exception:
+        print_exc()
+        return []
+    finally:
+        if conn:
+            conn.close()

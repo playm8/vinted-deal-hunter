@@ -17,7 +17,8 @@ import re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from logger import get_logger
-from web_ui_plugin.translations import LANGUAGES, js_translations, translate
+from translations import LANGUAGES, js_translations, translate
+from web_ui_plugin.sparkline import sparkline
 
 # Get logger for this module
 logger = get_logger(__name__)
@@ -187,6 +188,10 @@ def index():
         rss_running=rss_running,
         stats=stats,
         price_trends=db.get_price_trends(days=30),
+        price_lines=[
+            (brand, sparkline(points), points[-1][1])
+            for brand, points in db.get_price_history_series(days=30)
+        ],
     )
 
 
