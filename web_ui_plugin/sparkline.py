@@ -43,6 +43,9 @@ def sparkline(points, width=160, height=36, padding=3):
         "last": values[-1],
         "min": lowest,
         "max": highest,
-        "direction": "up" if values[-1] > values[0] else
-                     "down" if values[-1] < values[0] else "flat",
+        "direction": (
+            "up"
+            if values[-1] > values[0]
+            else "down" if values[-1] < values[0] else "flat"
+        ),
     }

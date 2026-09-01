@@ -326,7 +326,6 @@ def process_items(queue):
     record_scrape_outcome(total_found, total_kept)
 
 
-
 MIN_DELAY_SAMPLES = 5
 
 
@@ -528,8 +527,7 @@ def build_daily_summary():
         title, price, currency, url, discount = best
         lines += [
             "",
-            translate("Best deal:")
-            + f' <a href="{url}">{escape(str(title))}</a>',
+            translate("Best deal:") + f' <a href="{url}">{escape(str(title))}</a>',
             translate("{price} {currency} — {percent}% below market").format(
                 price=price, currency=currency, percent=round(abs(discount))
             ),
@@ -598,8 +596,6 @@ def build_item_message(item, evaluation=None):
         deal=evaluation["deal"],
     )
     return message_template.format_map(values)
-
-
 
 
 def seller_id(item):
@@ -676,7 +672,9 @@ def emit_system_messages(new_items_queue):
         if message:
             # Never silent: these are the messages that must be noticed.
             # No item id: a system message has nothing to act on.
-            new_items_queue.put((message, link, "Open project", None, None, False, None))
+            new_items_queue.put(
+                (message, link, "Open project", None, None, False, None)
+            )
 
 
 def clear_item_queue(items_queue, new_items_queue):
@@ -728,9 +726,7 @@ def clear_item_queue(items_queue, new_items_queue):
                 # notified, so that the feed stays quiet instead of noisy.
                 if not price_reference.should_notify(evaluation):
                     db.update_last_timestamp(query_id, item.raw_timestamp)
-                    logger.info(
-                        f"Item {item.id} skipped, {evaluation['discount']}"
-                    )
+                    logger.info(f"Item {item.id} skipped, {evaluation['discount']}")
                     log_item_outcome(item, evaluation, silent=False, skipped=True)
                     continue
                 # We create the message

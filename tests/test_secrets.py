@@ -93,7 +93,10 @@ def test_a_password_makes_the_interface_ask_for_one(database, monkeypatch):
     assert ok.status_code == 200
 
     wrong = base64.b64encode(b"admin:nope").decode()
-    assert client.get("/config", headers={"Authorization": f"Basic {wrong}"}).status_code == 401
+    assert (
+        client.get("/config", headers={"Authorization": f"Basic {wrong}"}).status_code
+        == 401
+    )
 
 
 def test_the_warning_shows_by_default(client):
@@ -116,7 +119,9 @@ def test_the_warning_never_shows_when_a_password_is_set(database, monkeypatch):
 
     importlib.reload(web_ui)
     token = base64.b64encode(b"admin:s3cret").decode()
-    body = web_ui.app.test_client().get(
-        "/config", headers={"Authorization": f"Basic {token}"}
-    ).get_data(as_text=True)
+    body = (
+        web_ui.app.test_client()
+        .get("/config", headers={"Authorization": f"Basic {token}"})
+        .get_data(as_text=True)
+    )
     assert "not password protected" not in body

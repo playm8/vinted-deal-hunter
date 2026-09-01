@@ -37,7 +37,9 @@ def test_condition_groups_recognise_every_locale():
 def test_catalog_filter_is_read_from_the_monitored_query():
     url = "https://www.vinted.fr/catalog?search_text=nike&catalog[]=1242&catalog[]=16"
     assert pr.extract_catalog_ids(url) == ["1242", "16"]
-    assert pr.extract_catalog_ids("https://www.vinted.fr/catalog?search_text=nike") == []
+    assert (
+        pr.extract_catalog_ids("https://www.vinted.fr/catalog?search_text=nike") == []
+    )
     assert pr.extract_catalog_ids(None) == []
 
 
@@ -48,7 +50,9 @@ def test_encoded_catalog_filter_is_read_too():
 
 
 def test_reference_query_carries_brand_keywords_size_and_category():
-    url = pr.build_reference_query("www.vinted.fr", "Nike", ["air", "max"], "42", ["1242"])
+    url = pr.build_reference_query(
+        "www.vinted.fr", "Nike", ["air", "max"], "42", ["1242"]
+    )
     assert url.startswith("https://www.vinted.fr/catalog?search_text=")
     assert "Nike+air+max+42" in url
     assert "catalog[]=1242" in url

@@ -58,8 +58,6 @@ def test_series_needs_two_distinct_days(database):
 
     now = time()
     for day_offset, price in ((0, 20), (0, 22)):
-        database.add_price_reference_history(
-            "Nike", "air max", price, "EUR", 10, 20.0
-        )
+        database.add_price_reference_history("Nike", "air max", price, "EUR", 10, 20.0)
     # Both samples land on the same day, so there is no trend to draw yet.
     assert database.get_price_history_series() == []

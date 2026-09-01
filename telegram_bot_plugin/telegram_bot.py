@@ -256,7 +256,6 @@ class LeRobot:
             except Exception as e2:
                 logger.error(f"Error sending error message: {str(e2)}")
 
-
     async def handle_action(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Act on a button pressed under an item notification.
@@ -339,8 +338,14 @@ class LeRobot:
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 
     async def send_new_post(
-        self, content, url, text, buy_url=None, buy_text=None, silent=False,
-        item_id=None
+        self,
+        content,
+        url,
+        text,
+        buy_url=None,
+        buy_text=None,
+        silent=False,
+        item_id=None,
     ):
         try:
             async with self.bot:

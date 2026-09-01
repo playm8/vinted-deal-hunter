@@ -41,9 +41,11 @@ def test_backup_produces_a_usable_database(database, tmp_path):
 
     import sqlite3
 
-    value = sqlite3.connect(path).execute(
-        "SELECT value FROM parameters WHERE key='banwords'"
-    ).fetchone()
+    value = (
+        sqlite3.connect(path)
+        .execute("SELECT value FROM parameters WHERE key='banwords'")
+        .fetchone()
+    )
     assert value[0] == "marker-value"
 
 
