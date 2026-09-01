@@ -544,7 +544,12 @@ def get_price_reference(cache_key, max_age_seconds):
 
 
 def set_price_reference(
-    cache_key, median_price, currency, sample_size, dispersion=0, condition_matched=False
+    cache_key,
+    median_price,
+    currency,
+    sample_size,
+    dispersion=0,
+    condition_matched=False,
 ):
     conn = None
     try:
@@ -578,8 +583,9 @@ def set_price_reference(
             conn.close()
 
 
-def add_price_reference_history(brand, keywords, median_price, currency,
-                                sample_size, dispersion):
+def add_price_reference_history(
+    brand, keywords, median_price, currency, sample_size, dispersion
+):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -588,8 +594,7 @@ def add_price_reference_history(brand, keywords, median_price, currency,
             "INSERT INTO price_reference_history "
             "(brand, keywords, median_price, currency, sample_size, "
             "dispersion, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (brand, keywords, median_price, currency, sample_size,
-             dispersion, time()),
+            (brand, keywords, median_price, currency, sample_size, dispersion, time()),
         )
         conn.commit()
     except Exception:
@@ -656,9 +661,20 @@ def get_price_trends(days=30, limit=20):
             conn.close()
 
 
-def add_notification_log(item_id, title, price, currency, url, discount_pct,
-                         deal, silent, skipped, brand=None, seller_id=None,
-                         seller_name=None):
+def add_notification_log(
+    item_id,
+    title,
+    price,
+    currency,
+    url,
+    discount_pct,
+    deal,
+    silent,
+    skipped,
+    brand=None,
+    seller_id=None,
+    seller_name=None,
+):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -668,8 +684,21 @@ def add_notification_log(item_id, title, price, currency, url, discount_pct,
             "url, discount_pct, deal, silent, skipped, sent_at, brand, "
             "seller_id, seller_name) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (item_id, title, price, currency, url, discount_pct, deal,
-             int(silent), int(skipped), time(), brand, seller_id, seller_name),
+            (
+                item_id,
+                title,
+                price,
+                currency,
+                url,
+                discount_pct,
+                deal,
+                int(silent),
+                int(skipped),
+                time(),
+                brand,
+                seller_id,
+                seller_name,
+            ),
         )
         conn.commit()
     except Exception:
@@ -943,7 +972,8 @@ def backup_database(directory, keep_last):
         target = None
 
         backups = sorted(
-            f for f in os.listdir(directory)
+            f
+            for f in os.listdir(directory)
             if f.startswith("vinted_notifications-") and f.endswith(".db")
         )
         for stale in backups[: max(len(backups) - keep_last, 0)]:

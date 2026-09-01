@@ -21,7 +21,6 @@ import core
 from rss_feed_plugin.rss_feed import rss_feed_process
 from web_ui_plugin.web_ui import web_ui_process
 
-
 # Global process references
 telegram_process = None
 rss_process = None
@@ -220,7 +219,9 @@ if __name__ == "__main__":
         retention = int(float(db.get_parameter("price_history_retention_days") or 90))
         removed = db.purge_price_reference_history(retention)
         if removed:
-            logger.info(f"Purged {removed} price history entries older than {retention} days")
+            logger.info(
+                f"Purged {removed} price history entries older than {retention} days"
+            )
     except Exception as e:
         logger.warning(f"Could not purge price history: {e}")
 
@@ -238,10 +239,14 @@ if __name__ == "__main__":
         logger.warning(f"Could not back up the database: {e}")
 
     try:
-        retention = int(float(db.get_parameter("notification_log_retention_days") or 30))
+        retention = int(
+            float(db.get_parameter("notification_log_retention_days") or 30)
+        )
         removed = db.purge_notification_log(retention)
         if removed:
-            logger.info(f"Purged {removed} notification log entries older than {retention} days")
+            logger.info(
+                f"Purged {removed} notification log entries older than {retention} days"
+            )
     except Exception as e:
         logger.warning(f"Could not purge notification log: {e}")
 

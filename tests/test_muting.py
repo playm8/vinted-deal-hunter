@@ -58,8 +58,18 @@ def test_sellers_round_trip_through_the_database(database):
 
 def test_the_log_records_what_an_action_needs(database):
     database.add_notification_log(
-        1, "Nike Air", 30, "EUR", "https://x", 20, "deal", False, False,
-        brand="Nike", seller_id="42", seller_name="bob",
+        1,
+        "Nike Air",
+        30,
+        "EUR",
+        "https://x",
+        20,
+        "deal",
+        False,
+        False,
+        brand="Nike",
+        seller_id="42",
+        seller_name="bob",
     )
     logged = database.get_logged_item(1)
     assert logged["brand"] == "Nike"

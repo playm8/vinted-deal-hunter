@@ -76,6 +76,7 @@ def inject_translations():
         == "false",
     }
 
+
 # Secret key for session management
 app.secret_key = os.urandom(24)
 
@@ -174,7 +175,7 @@ def index():
             ),
             "query": last_item[5],
             "photo_url": last_item[6],
-            "url": f"{urlparse(last_item[5]).scheme}://{urlparse(last_item[5]).netloc}/items/{last_item[0]}"
+            "url": f"{urlparse(last_item[5]).scheme}://{urlparse(last_item[5]).netloc}/items/{last_item[0]}",
         }
     else:
         stats["last_item"] = None
@@ -322,9 +323,15 @@ def items():
                 # Ugly Ugly Ugly very Ugly eeew but I have to do a proper migration of existing db later else it'll break
                 # Eeew bad me >:c
                 "query": (
-                    item[7] if item[7] else parse_qs(urlparse(item[5]).query).get("search_text", [None])[0]
-                    if parse_qs(urlparse(item[5]).query).get("search_text", [None])[0]
-                    else item[5]
+                    item[7]
+                    if item[7]
+                    else (
+                        parse_qs(urlparse(item[5]).query).get("search_text", [None])[0]
+                        if parse_qs(urlparse(item[5]).query).get("search_text", [None])[
+                            0
+                        ]
+                        else item[5]
+                    )
                 ),
                 "url": f"{urlparse(item[5]).scheme}://{urlparse(item[5]).netloc}/items/{item[0]}",
                 "photo_url": item[6],
@@ -429,14 +436,10 @@ def update_config():
     watchdog_enabled = "watchdog_enabled" in request.form
     db.set_parameter("watchdog_enabled", str(watchdog_enabled))
     db.set_parameter("watchdog_cycles", request.form.get("watchdog_cycles", "30"))
-    db.set_parameter(
-        "web_ui_auth_warning", str("web_ui_auth_warning" in request.form)
-    )
+    db.set_parameter("web_ui_auth_warning", str("web_ui_auth_warning" in request.form))
     daily_summary_enabled = "daily_summary_enabled" in request.form
     db.set_parameter("daily_summary_enabled", str(daily_summary_enabled))
-    db.set_parameter(
-        "daily_summary_hour", request.form.get("daily_summary_hour", "20")
-    )
+    db.set_parameter("daily_summary_hour", request.form.get("daily_summary_hour", "20"))
 
     # Update Deal Detection parameters
     price_reference_enabled = "price_reference_enabled" in request.form
@@ -452,11 +455,11 @@ def update_config():
     db.set_parameter(
         "price_reference_ttl_hours", request.form.get("price_reference_ttl_hours", "24")
     )
-    db.set_parameter("deal_threshold_good", request.form.get("deal_threshold_good", "25"))
-    db.set_parameter("deal_threshold_hot", request.form.get("deal_threshold_hot", "50"))
     db.set_parameter(
-        "notify_silent_below", request.form.get("notify_silent_below", "")
+        "deal_threshold_good", request.form.get("deal_threshold_good", "25")
     )
+    db.set_parameter("deal_threshold_hot", request.form.get("deal_threshold_hot", "50"))
+    db.set_parameter("notify_silent_below", request.form.get("notify_silent_below", ""))
     db.set_parameter("notify_skip_below", request.form.get("notify_skip_below", ""))
     db.set_parameter(
         "price_reference_max_dispersion",

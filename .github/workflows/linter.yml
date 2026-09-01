@@ -36,15 +36,14 @@ jobs:
           pip install ruff black pip-audit
 
       # ---- Linting & formatting checks ----
-      # Not blocking yet: the repository does not meet these rules today, and
-      # the reformatting lands in its own commit so it stays reviewable.
+      # Ruff is still advisory: its remaining findings are addressed next, in
+      # their own commit. Black is enforced from here on.
       - name: Ruff (lint)
         run: ruff check .
         continue-on-error: true
 
       - name: Black (format check)
         run: black --check .
-        continue-on-error: true
 
       # ---- Dependency vulnerability audit ----
       - name: Pip-audit (requirements.txt)
