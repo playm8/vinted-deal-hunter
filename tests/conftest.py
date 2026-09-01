@@ -68,12 +68,22 @@ class FakeItem:
         age = overrides.get("age_minutes", 5)
         self.created_at_ts = datetime.now(timezone.utc) - timedelta(minutes=age)
         self.raw_timestamp = int(self.created_at_ts.timestamp())
+        self.seller_id = overrides.get("seller", "42")
         self.raw_data = {
+            "user": {
+                "id": self.seller_id,
+                "login": overrides.get("seller_name", "bob"),
+            },
             "status": overrides.get("status", "Très bon état"),
             "favourite_count": overrides.get("favourites", 3),
             "view_count": overrides.get("views", 7),
             "total_item_price": {"amount": overrides.get("total", "32.20")},
         }
+
+    def is_new_item(self, minutes=240):
+        """Mirrors Item.is_new_item so the pipeline can be exercised."""
+        delta = datetime.now(timezone.utc) - self.created_at_ts
+        return delta.total_seconds() < minutes * 60
 
 
 @pytest.fixture
