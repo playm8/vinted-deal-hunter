@@ -313,7 +313,7 @@ def process_items(queue):
         all_items = vinted.items.search(query[1], nbr_items=items_per_query)
         # Measured before filtering, so a window that is already too narrow
         # cannot hide the measurement that would widen it.
-        record_indexing_delay(all_items)
+        record_indexing_delay(all_items, query[0])
         # Only consider recent items, to keep a brand new query from notifying
         # a whole catalogue at once. The window has to stay well above Vinted's
         # indexing delay: an item shows up in search results long after the
@@ -338,24 +338,49 @@ def process_items(queue):
 MIN_DELAY_SAMPLES = 5
 
 
-def record_indexing_delay(all_items):
+# Item ids returned by the previous cycle, per query. Kept in memory on
+# purpose: losing it on a restart costs one cycle of measurement, where
+# persisting it would add a write on every scrape for no lasting benefit.
+_previous_result_ids = {}
+
+
+def record_indexing_delay(all_items, query_id):
     """
     Record how far behind Vinted's search index is running.
 
-    The freshest item a search returns is the most recently indexed one, so
-    its age is an upper bound on the indexing delay. It is measured before the
-    age filter is applied, otherwise a window that is already too narrow would
-    hide the very measurement needed to widen it.
+    Only items that were absent from the previous cycle are measured. An item
+    already returned last time says nothing about the indexing delay: it just
+    ages by one cycle, so re-measuring it makes every sample, including the
+    smallest, climb by exactly the elapsed time. On a quiet query that drift
+    is unbounded until the window hits its cap, which silently disables the
+    age filter it was meant to size.
+
+    Among the newcomers the freshest one is used: its age is an upper bound on
+    the delay between publication and the item becoming searchable. It is
+    measured before the age filter is applied, otherwise a window that is
+    already too narrow would hide the very measurement needed to widen it.
 
     Args:
         all_items (list): Items returned by a search, before filtering.
+        query_id: Identifier of the query these results belong to.
     """
-    if not all_items:
-        return
     try:
+        current = {item.id for item in all_items}
+        previous = _previous_result_ids.get(query_id)
+        _previous_result_ids[query_id] = current
+
+        # First cycle for this query: everything looks new, including a back
+        # catalogue that has been sitting there for weeks. Nothing to learn.
+        if previous is None:
+            return
+
+        newcomers = [item for item in all_items if item.id not in previous]
+        if not newcomers:
+            return
+
         now = datetime.now(timezone.utc)
         youngest = min(
-            (now - item.created_at_ts).total_seconds() / 60 for item in all_items
+            (now - item.created_at_ts).total_seconds() / 60 for item in newcomers
         )
         keep_last = int(float(db.get_parameter("indexing_delay_window") or 60))
         db.add_indexing_delay_sample(round(youngest, 1), keep_last)
