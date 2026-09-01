@@ -228,6 +228,9 @@ if __name__ == "__main__":
         logger.warning(f"Could not purge price history: {e}")
 
     try:
+        # Fold the write-ahead log back into the database first, so the copy
+        # does not depend on a -wal file it will not carry.
+        db.checkpoint()
         if str(db.get_parameter("backup_enabled")).lower() == "true":
             path = db.backup_database(
                 db.get_parameter("backup_directory") or "./data/backups",

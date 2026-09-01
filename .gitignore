@@ -10,3 +10,7 @@ vinted.db
 /logs/
 __pycache__/
 *.pyc
+
+# SQLite write-ahead log companions, never versioned
+*.db-wal
+*.db-shm
