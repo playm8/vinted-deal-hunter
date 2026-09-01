@@ -29,7 +29,11 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 class LeRobot:
     def __init__(self, queue):
         from telegram import Bot
-        from telegram.ext import ApplicationBuilder, CommandHandler
+        from telegram.ext import (
+            ApplicationBuilder,
+            CallbackQueryHandler,
+            CommandHandler,
+        )
 
         try:
 
@@ -54,6 +58,10 @@ class LeRobot:
             self.app.add_handler(CommandHandler("add_country", self.add_country))
             self.app.add_handler(CommandHandler("remove_country", self.remove_country))
             self.app.add_handler(CommandHandler("allowlist", self.allowlist))
+            # Buttons carried by each item notification
+            self.app.add_handler(CallbackQueryHandler(self.handle_action))
+            self.app.add_handler(CommandHandler("muted", self.muted))
+            self.app.add_handler(CommandHandler("unmute_brand", self.unmute_brand))
 
             # TODO : Help command
 
@@ -248,10 +256,91 @@ class LeRobot:
             except Exception as e2:
                 logger.error(f"Error sending error message: {str(e2)}")
 
+
+    async def handle_action(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Act on a button pressed under an item notification.
+
+        The button only carries an item id, since callback data is limited to
+        64 bytes: what to mute is looked up in the notification log.
+        """
+        query = update.callback_query
+        try:
+            action, _, item_id = (query.data or "").partition(":")
+            logged = db.get_logged_item(item_id)
+            if not logged:
+                await query.answer("Item no longer known", show_alert=True)
+                return
+
+            if action == "mute_brand":
+                brand = logged.get("brand")
+                if not brand:
+                    await query.answer("No brand recorded for this item")
+                    return
+                added = db.ignore_brand(brand)
+                await query.answer(
+                    f"{brand} muted" if added else f"{brand} was already muted"
+                )
+            elif action == "mute_seller":
+                seller = logged.get("seller_id")
+                if not seller:
+                    await query.answer("No seller recorded for this item")
+                    return
+                name = logged.get("seller_name") or seller
+                added = db.ignore_seller(seller, logged.get("seller_name"))
+                await query.answer(
+                    f"{name} muted" if added else f"{name} was already muted"
+                )
+            else:
+                await query.answer()
+        except Exception as e:
+            logger.error(f"Error handling action: {str(e)}", exc_info=True)
+            try:
+                await query.answer("Something went wrong")
+            except Exception:
+                pass
+
+    async def muted(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """List what is currently muted, so it can be undone."""
+        try:
+            lists = db.get_ignored_lists()
+            lines = []
+            if lists["brands"]:
+                lines.append("Muted brands:")
+                lines += [f"  {brand}" for brand, _ in lists["brands"]]
+            if lists["sellers"]:
+                lines.append("Muted sellers:")
+                lines += [
+                    f"  {name or seller_id}" for seller_id, name, _ in lists["sellers"]
+                ]
+            if not lines:
+                lines = ["Nothing is muted."]
+            else:
+                lines.append("")
+                lines.append("Use /unmute_brand <name> to undo.")
+            await update.message.reply_text("\n".join(lines))
+        except Exception as e:
+            logger.error(f"Error listing muted entries: {str(e)}", exc_info=True)
+
+    async def unmute_brand(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Undo a muted brand."""
+        try:
+            brand = " ".join(context.args).strip()
+            if not brand:
+                await update.message.reply_text("No brand provided.")
+                return
+            removed = db.unignore_brand(brand)
+            await update.message.reply_text(
+                f"{brand} is no longer muted" if removed else f"{brand} was not muted"
+            )
+        except Exception as e:
+            logger.error(f"Error unmuting brand: {str(e)}", exc_info=True)
+
     ### TELEGRAM SPECIFIC FUNCTIONS ###
 
     async def send_new_post(
-        self, content, url, text, buy_url=None, buy_text=None, silent=False
+        self, content, url, text, buy_url=None, buy_text=None, silent=False,
+        item_id=None
     ):
         try:
             async with self.bot:
@@ -259,6 +348,19 @@ class LeRobot:
                 buttons = [[InlineKeyboardButton(text=text, url=url)]]
                 if buy_url and buy_text:
                     buttons.append([InlineKeyboardButton(text=buy_text, url=buy_url)])
+                if item_id is not None:
+                    # Acting where the notification is read beats going to the
+                    # settings page to describe an item you just saw.
+                    buttons.append(
+                        [
+                            InlineKeyboardButton(
+                                text="🔇 Brand", callback_data=f"mute_brand:{item_id}"
+                            ),
+                            InlineKeyboardButton(
+                                text="🔇 Seller", callback_data=f"mute_seller:{item_id}"
+                            ),
+                        ]
+                    )
                 await self.bot.send_message(
                     chat_ID,
                     content,
@@ -275,7 +377,9 @@ class LeRobot:
             )
             await asyncio.sleep(retry_after + 2)
             # Retry sending the message
-            await self.send_new_post(content, url, text, buy_url, buy_text, silent)
+            await self.send_new_post(
+                content, url, text, buy_url, buy_text, silent, item_id
+            )
         except Exception as e:
             logger.error(f"Error sending new post: {str(e)}", exc_info=True)
 
@@ -304,9 +408,10 @@ class LeRobot:
                         buy_url,
                         buy_text,
                         silent,
+                        item_id,
                     ) = self.new_items_queue.get()
                     await self.send_new_post(
-                        content, url, text, buy_url, buy_text, silent
+                        content, url, text, buy_url, buy_text, silent, item_id
                     )
                 else:
                     await asyncio.sleep(0.1)
@@ -326,6 +431,8 @@ class LeRobot:
                     ("add_country", "Add a country to the allowlist"),
                     ("remove_country", "Remove a country from the allowlist"),
                     ("allowlist", "List all countries in the allowlist"),
+                    ("muted", "List muted brands and sellers"),
+                    ("unmute_brand", "Stop muting a brand"),
                 ]
             )
             logger.info("Bot commands set successfully")

@@ -44,7 +44,9 @@ class RSSFeed:
     def check_rss_queue(self):
         if not self.queue.empty():
             try:
-                content, url, text, buy_url, buy_text, silent = self.queue.get()
+                content, url, text, buy_url, buy_text, silent, item_id = (
+                    self.queue.get()
+                )
 
                 # Add item to the feed
                 self.add_item_to_feed(content, url)
