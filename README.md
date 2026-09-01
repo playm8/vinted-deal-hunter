@@ -363,6 +363,19 @@ pip install -r requirements.txt
 
 Then restart the application.
 
+## 🔇 Muting from a notification
+
+Every item notification carries two buttons, **🔇 Brand** and **🔇 Seller**. A
+bad match can be dismissed where it is read, instead of going to the settings
+page to describe an item you just saw. Muted items are still recorded, so they
+are not seen again, but nothing is sent.
+
+The button carries only the item id, since Telegram limits callback data to 64
+bytes; what to mute is looked up in the notification log.
+
+- `/muted` lists what is currently muted
+- `/unmute_brand <name>` undoes a brand
+
 ## 🔐 Credentials
 
 The bot token, the chat id and the proxy list can be supplied through the

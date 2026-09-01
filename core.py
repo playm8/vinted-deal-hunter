@@ -589,6 +589,40 @@ def build_item_message(item, evaluation=None):
 
 
 
+
+def seller_id(item):
+    """Return the seller id of an item, or None when the API omitted it."""
+    try:
+        return str(item.raw_data["user"]["id"])
+    except (KeyError, TypeError):
+        return None
+
+
+def seller_name(item):
+    """Return the seller login of an item, or None when the API omitted it."""
+    try:
+        return item.raw_data["user"].get("login")
+    except (KeyError, AttributeError, TypeError):
+        return None
+
+
+def is_muted(item, ignored_brands, ignored_sellers):
+    """
+    Tell whether the item's brand or seller was muted from a notification.
+
+    Args:
+        item (Item): The item to check.
+        ignored_brands (set): Lowercased muted brands.
+        ignored_sellers (set): Muted seller ids, as strings.
+
+    Returns:
+        bool: True when the item must not be notified.
+    """
+    if (item.brand_title or "").lower() in ignored_brands:
+        return True
+    return seller_id(item) in ignored_sellers if ignored_sellers else False
+
+
 def log_item_outcome(item, evaluation, silent, skipped):
     """Record what was decided for an item, for the daily summary."""
     try:
@@ -602,6 +636,9 @@ def log_item_outcome(item, evaluation, silent, skipped):
             evaluation.get("deal"),
             silent,
             skipped,
+            item.brand_title,
+            seller_id(item),
+            seller_name(item),
         )
     except Exception as e:
         logger.debug(f"Could not log outcome for item {item.id}: {e}")
@@ -626,7 +663,8 @@ def emit_system_messages(new_items_queue):
             continue
         if message:
             # Never silent: these are the messages that must be noticed.
-            new_items_queue.put((message, link, "Open project", None, None, False))
+            # No item id: a system message has nothing to act on.
+            new_items_queue.put((message, link, "Open project", None, None, False, None))
 
 
 def clear_item_queue(items_queue, new_items_queue):
@@ -640,6 +678,8 @@ def clear_item_queue(items_queue, new_items_queue):
         data, query_id = items_queue.get()
         banwords_str = db.get_parameter("banwords")
         query_url = db.get_query_url(query_id)
+        ignored_brands = {b.lower() for b in db.get_ignored_brands()}
+        ignored_sellers = set(db.get_ignored_sellers())
         for item in reversed(data):
 
             # If already in db, pass
@@ -661,6 +701,10 @@ def clear_item_queue(items_queue, new_items_queue):
             ) not in (db.get_allowlist() + ["XX"]):
                 db.update_last_timestamp(query_id, item.raw_timestamp)
                 pass
+            # Muted from a previous notification: recorded, never sent.
+            elif is_muted(item, ignored_brands, ignored_sellers):
+                db.update_last_timestamp(query_id, item.raw_timestamp)
+                logger.info(f"Item {item.id} muted by brand or seller")
             # Check if the item title contains any banwords
             elif banwords_str and contains_banwords(item.title, banwords_str):
                 # If it contains banwords, just update the timestamp and skip
@@ -682,7 +726,7 @@ def clear_item_queue(items_queue, new_items_queue):
                 silent = price_reference.is_silent(evaluation)
                 # add the item to the queue
                 new_items_queue.put(
-                    (content, item.url, "Open Vinted", None, None, silent)
+                    (content, item.url, "Open Vinted", None, None, silent, item.id)
                 )
                 log_item_outcome(item, evaluation, silent=silent, skipped=False)
                 # Add the item to the db

@@ -657,17 +657,19 @@ def get_price_trends(days=30, limit=20):
 
 
 def add_notification_log(item_id, title, price, currency, url, discount_pct,
-                         deal, silent, skipped):
+                         deal, silent, skipped, brand=None, seller_id=None,
+                         seller_name=None):
     conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO notification_log (item_id, title, price, currency, "
-            "url, discount_pct, deal, silent, skipped, sent_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "url, discount_pct, deal, silent, skipped, sent_at, brand, "
+            "seller_id, seller_name) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (item_id, title, price, currency, url, discount_pct, deal,
-             int(silent), int(skipped), time()),
+             int(silent), int(skipped), time(), brand, seller_id, seller_name),
         )
         conn.commit()
     except Exception:
@@ -779,6 +781,136 @@ def get_indexing_delay_samples():
     except Exception:
         print_exc()
         return []
+    finally:
+        if conn:
+            conn.close()
+
+
+def ignore_brand(brand):
+    """Mute a brand. Returns False when it was already muted."""
+    return _add_to_ignore_list(
+        "INSERT INTO ignored_brands (brand, ignored_at) VALUES (?, ?)",
+        (brand, time()),
+    )
+
+
+def ignore_seller(seller_id, seller_name):
+    """Mute a seller. Returns False when they were already muted."""
+    return _add_to_ignore_list(
+        "INSERT INTO ignored_sellers (seller_id, seller_name, ignored_at) "
+        "VALUES (?, ?, ?)",
+        (str(seller_id), seller_name, time()),
+    )
+
+
+def _add_to_ignore_list(statement, values):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(statement, values)
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_ignored_brands():
+    return _fetch_column("SELECT brand FROM ignored_brands")
+
+
+def get_ignored_sellers():
+    return _fetch_column("SELECT seller_id FROM ignored_sellers")
+
+
+def _fetch_column(query):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        return [str(row[0]) for row in conn.execute(query)]
+    except Exception:
+        print_exc()
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+
+def unignore_brand(brand):
+    return _delete_one("DELETE FROM ignored_brands WHERE brand=?", (brand,))
+
+
+def unignore_seller(seller_id):
+    return _delete_one(
+        "DELETE FROM ignored_sellers WHERE seller_id=?", (str(seller_id),)
+    )
+
+
+def _delete_one(statement, values):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(statement, values)
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception:
+        print_exc()
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_ignored_lists():
+    """Return muted brands and sellers for display, newest first."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        return {
+            "brands": conn.execute(
+                "SELECT brand, ignored_at FROM ignored_brands ORDER BY ignored_at DESC"
+            ).fetchall(),
+            "sellers": conn.execute(
+                "SELECT seller_id, seller_name, ignored_at FROM ignored_sellers "
+                "ORDER BY ignored_at DESC"
+            ).fetchall(),
+        }
+    except Exception:
+        print_exc()
+        return {"brands": [], "sellers": []}
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_logged_item(item_id):
+    """Look up what was notified for an item, to act on it later."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.execute(
+            "SELECT title, brand, seller_id, seller_name FROM notification_log "
+            "WHERE item_id=? ORDER BY id DESC LIMIT 1",
+            (item_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {
+            "title": row[0],
+            "brand": row[1],
+            "seller_id": row[2],
+            "seller_name": row[3],
+        }
+    except Exception:
+        print_exc()
+        return None
     finally:
         if conn:
             conn.close()
