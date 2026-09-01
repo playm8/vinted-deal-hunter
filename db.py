@@ -619,3 +619,86 @@ def get_price_trends(days=30, limit=20):
     finally:
         if conn:
             conn.close()
+
+
+def add_notification_log(item_id, title, price, currency, url, discount_pct,
+                         deal, silent, skipped):
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO notification_log (item_id, title, price, currency, "
+            "url, discount_pct, deal, silent, skipped, sent_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (item_id, title, price, currency, url, discount_pct, deal,
+             int(silent), int(skipped), time()),
+        )
+        conn.commit()
+    except Exception:
+        print_exc()
+    finally:
+        if conn:
+            conn.close()
+
+
+def get_notification_summary(since_timestamp):
+    """
+    Summarise what happened to the items found since a point in time.
+
+    Returns:
+        dict: counts of items seen, notified, silenced and skipped, plus the
+            best deal of the period as a row or None.
+    """
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT COUNT(*), "
+            "SUM(CASE WHEN skipped = 0 THEN 1 ELSE 0 END), "
+            "SUM(CASE WHEN skipped = 0 AND silent = 1 THEN 1 ELSE 0 END), "
+            "SUM(CASE WHEN skipped = 1 THEN 1 ELSE 0 END) "
+            "FROM notification_log WHERE sent_at >= ?",
+            (since_timestamp,),
+        )
+        seen, notified, silenced, skipped = cursor.fetchone()
+        cursor.execute(
+            "SELECT title, price, currency, url, discount_pct FROM notification_log "
+            "WHERE sent_at >= ? AND skipped = 0 AND discount_pct IS NOT NULL "
+            "ORDER BY discount_pct DESC LIMIT 1",
+            (since_timestamp,),
+        )
+        return {
+            "seen": seen or 0,
+            "notified": notified or 0,
+            "silenced": silenced or 0,
+            "skipped": skipped or 0,
+            "best": cursor.fetchone(),
+        }
+    except Exception:
+        print_exc()
+        return {"seen": 0, "notified": 0, "silenced": 0, "skipped": 0, "best": None}
+    finally:
+        if conn:
+            conn.close()
+
+
+def purge_notification_log(max_age_days):
+    """Drop notification history older than the retention window."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM notification_log WHERE sent_at < ?",
+            (time() - max_age_days * 86400,),
+        )
+        conn.commit()
+        return cursor.rowcount
+    except Exception:
+        print_exc()
+        return 0
+    finally:
+        if conn:
+            conn.close()

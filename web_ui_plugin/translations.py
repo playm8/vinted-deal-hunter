@@ -77,6 +77,17 @@ TRANSLATIONS = {
             "Mots à exclure des titres d'articles. Les articles contenant ces mots seront ignorés.",
         "Enter a word to ban": "Saisissez un mot à exclure",
         # Deal detection
+        "Monitoring": "Surveillance",
+        "Alert when nothing is kept": "Alerter quand plus rien n'est retenu",
+        "Warns you when searches return results but every item is discarded, the signature of a silent breakdown.":
+            "Vous avertit quand les recherches renvoient des résultats mais que tous les articles sont écartés, la signature d'une panne silencieuse.",
+        "Cycles Before Alerting": "Cycles avant alerte",
+        "Empty cycles to tolerate before warning": "Cycles à vide tolérés avant l'avertissement",
+        "Send a daily summary": "Envoyer un résumé quotidien",
+        "One message a day with what was found, notified and skipped.":
+            "Un message par jour indiquant ce qui a été trouvé, notifié et ignoré.",
+        "Summary Hour": "Heure du résumé",
+        "Hour of the day, server time": "Heure de la journée, heure du serveur",
         "Deal Detection": "Détection de bonnes affaires",
         "Enable market price reference": "Activer le prix de référence du marché",
         "Compares each new item with the median price of similar Vinted listings to score the deal. Costs one extra request per new item (cached).":

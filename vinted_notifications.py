@@ -224,6 +224,14 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warning(f"Could not purge price history: {e}")
 
+    try:
+        retention = int(float(db.get_parameter("notification_log_retention_days") or 30))
+        removed = db.purge_notification_log(retention)
+        if removed:
+            logger.info(f"Purged {removed} notification log entries older than {retention} days")
+    except Exception as e:
+        logger.warning(f"Could not purge notification log: {e}")
+
     # Plugin checker
     plugin_checker()
 
