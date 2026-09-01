@@ -1,5 +1,6 @@
 import db
 import price_reference
+from translations import translate
 import re
 import requests
 from pyVintedVN import Vinted, requester
@@ -81,11 +82,11 @@ def process_query(query, name=None):
 
     # Some queries are made with filters only, so we need to check if the search_text is present
     if db.is_query_in_db(processed_query) is True:
-        return "Query already exists.", False
+        return translate("Query already exists."), False
     else:
         # add the query to the db
         db.add_query_to_db(processed_query, name)
-        return "Query added.", True
+        return translate("Query added."), True
 
 
 def get_formatted_query_list():
@@ -134,15 +135,15 @@ def process_remove_query(number):
     """
     if number == "all":
         db.remove_all_queries_from_db()
-        return "All queries removed.", True
+        return translate("All queries removed."), True
 
     # Check if number is a valid digit
     if number.isdigit():
         # Remove the query from the database
         db.remove_query_from_db(number)
-        return "Query removed.", True
+        return translate("Query removed."), True
     else:
-        return "Invalid number.", False
+        return translate("Invalid number."), False
 
 
 def process_update_query(query_id, query, name):
@@ -186,9 +187,9 @@ def process_update_query(query_id, query, name):
 
     # Update the query in the database
     if db.update_query_in_db(query_id, processed_query, name):
-        return "Query updated.", True
+        return translate("Query updated."), True
     else:
-        return "Failed to update query.", False
+        return translate("Failed to update query."), False
 
 
 def process_add_country(country):
@@ -209,7 +210,7 @@ def process_add_country(country):
 
     # Validate the country code (check if it's 2 characters long)
     if len(country) != 2:
-        return "Invalid country code", country_list
+        return translate("Invalid country code"), country_list
 
     # Check if the country is already in the allowlist
     # If country_list is 0, it means the allowlist is empty
@@ -218,7 +219,7 @@ def process_add_country(country):
 
     # Add the country to the allowlist
     db.add_to_allowlist(country.upper())
-    return "Country added.", db.get_allowlist()
+    return translate("Country added."), db.get_allowlist()
 
 
 def process_remove_country(country):
@@ -238,11 +239,11 @@ def process_remove_country(country):
 
     # Validate the country code (check if it's 2 characters long)
     if len(country) != 2:
-        return "Invalid country code", db.get_allowlist()
+        return translate("Invalid country code"), db.get_allowlist()
 
     # Remove the country from the allowlist
     db.remove_from_allowlist(country.upper())
-    return "Country removed.", db.get_allowlist()
+    return translate("Country removed."), db.get_allowlist()
 
 
 def get_user_country(profile_id):
@@ -473,13 +474,19 @@ def pending_watchdog_alert():
         f"{cycles} cycles"
     )
     return (
-        "⚠️ <b>No item kept for "
-        + str(minutes)
-        + " minutes</b>\n\n"
-        + "Searches are returning results, but every item is being discarded.\n"
-        + "This usually means Vinted now publishes items later than the age "
-        + "window allows.\n\n"
-        + "Raise <b>Maximum Item Age</b> in Configuration."
+        "⚠️ <b>"
+        + translate("No item kept for {minutes} minutes").format(minutes=minutes)
+        + "</b>\n\n"
+        + translate(
+            "Searches are returning results, but every item is being discarded."
+        )
+        + "\n"
+        + translate(
+            "This usually means Vinted now publishes items later than the age "
+            "window allows."
+        )
+        + "\n\n"
+        + translate("Raise Maximum Item Age in Configuration.")
     )
 
 
@@ -508,19 +515,24 @@ def build_daily_summary():
         datetime.combine(now.date(), dtime.min).timestamp()
     )
     lines = [
-        "📊 <b>Daily summary</b>",
+        "📊 <b>" + translate("Daily summary") + "</b>",
         "",
-        f"Items found: {summary['seen']}",
-        f"Notified: {summary['notified']} (of which {summary['silenced']} silent)",
-        f"Skipped: {summary['skipped']}",
+        translate("Items found: {count}").format(count=summary["seen"]),
+        translate("Notified: {count} (of which {silent} silent)").format(
+            count=summary["notified"], silent=summary["silenced"]
+        ),
+        translate("Skipped: {count}").format(count=summary["skipped"]),
     ]
     best = summary["best"]
     if best:
         title, price, currency, url, discount = best
         lines += [
             "",
-            f"Best deal: <a href=\"{url}\">{escape(str(title))}</a>",
-            f"{price} {currency} — {round(abs(discount))}% below market",
+            translate("Best deal:")
+            + f' <a href="{url}">{escape(str(title))}</a>',
+            translate("{price} {currency} — {percent}% below market").format(
+                price=price, currency=currency, percent=round(abs(discount))
+            ),
         ]
     return "\n".join(lines)
 
