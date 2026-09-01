@@ -672,7 +672,17 @@ def api_logs():
 def web_ui_process():
     logger.info("Web UI process started")
     try:
-        app.run(host="0.0.0.0", port=8000, debug=False)
+        # Flask's own server prints a warning that it is not meant for
+        # production, and it means it: single-threaded and without the
+        # hardening a real server has. Waitress is a drop-in replacement,
+        # with a fallback so a missing dependency never costs the interface.
+        try:
+            from waitress import serve
+
+            serve(app, host="0.0.0.0", port=8000, threads=8, _quiet=True)
+        except ImportError:
+            logger.warning("waitress is not installed, falling back to Flask")
+            app.run(host="0.0.0.0", port=8000, debug=False)
     except (KeyboardInterrupt, SystemExit):
         logger.info("Web UI process stopped")
     except Exception as e:

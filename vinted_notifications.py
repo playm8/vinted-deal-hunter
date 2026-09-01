@@ -225,6 +225,19 @@ if __name__ == "__main__":
         logger.warning(f"Could not purge price history: {e}")
 
     try:
+        if str(db.get_parameter("backup_enabled")).lower() == "true":
+            path = db.backup_database(
+                db.get_parameter("backup_directory") or "./data/backups",
+                int(float(db.get_parameter("backup_keep") or 7)),
+            )
+            if path:
+                logger.info(f"Database backed up to {path}")
+            else:
+                logger.warning("Database backup failed")
+    except Exception as e:
+        logger.warning(f"Could not back up the database: {e}")
+
+    try:
         retention = int(float(db.get_parameter("notification_log_retention_days") or 30))
         removed = db.purge_notification_log(retention)
         if removed:
