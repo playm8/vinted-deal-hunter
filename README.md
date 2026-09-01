@@ -363,6 +363,28 @@ pip install -r requirements.txt
 
 Then restart the application.
 
+## 🧪 Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests/ -q
+```
+
+Or without installing anything locally:
+
+```bash
+docker compose run --rm --entrypoint sh vinted-deal-hunter -c "pip install -q pytest && python -m pytest tests/ -q"
+```
+
+The suite covers the logic that decides what you get notified about: keyword
+extraction across languages, outlier filtering, condition grouping, the
+silent and skip thresholds, message rendering and escaping, the watchdog, and
+the adaptive age window. No test touches the network.
+
+Each test runs against a real SQLite database built the way a fresh install
+builds it — the initial schema, then every migration in version order — so
+the migration chain is exercised on every run.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
