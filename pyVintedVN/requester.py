@@ -4,6 +4,7 @@ import sys
 import os
 import db
 import random
+from time import sleep
 import requests
 from requests.exceptions import HTTPError
 
@@ -13,6 +14,33 @@ from logger import get_logger
 
 # Get logger for this module
 logger = get_logger(__name__)
+
+
+def backoff_delay(attempt, response=None, cap=60.0):
+    """
+    How long to wait before retrying a rejected request.
+
+    Vinted answers 429 with a Retry-After header when it wants a pause, and
+    that instruction is followed as given. Otherwise the delay doubles with
+    each attempt, because retrying a refusal immediately is what turns a
+    temporary block into a lasting one.
+
+    Args:
+        attempt (int): Attempt number, starting at 1.
+        response: The rejected response, when there is one.
+        cap (float): Longest delay to ever wait, in seconds.
+
+    Returns:
+        float: Seconds to wait.
+    """
+    if response is not None:
+        header = response.headers.get("Retry-After")
+        if header:
+            try:
+                return min(float(header), cap)
+            except (TypeError, ValueError):
+                pass
+    return min(2.0 ** max(attempt - 1, 0), cap)
 
 
 class Requester:
@@ -129,6 +157,13 @@ class Requester:
                             f"Cookies invalid retrying {tried}/{self.MAX_RETRIES}"
                         )
                     self.set_cookies()
+                elif response.status_code == 429 and tried < self.MAX_RETRIES:
+                    delay = backoff_delay(tried, response)
+                    logger.warning(
+                        f"Rate limited by Vinted, waiting {delay:.0f}s "
+                        f"({tried}/{self.MAX_RETRIES})"
+                    )
+                    sleep(delay)
                 elif response.status_code == 200:
                     return response
                 elif tried == self.MAX_RETRIES:
@@ -144,6 +179,12 @@ class Requester:
                             f"Response body (first 500 chars): {response.text[:500]}"
                         )
 
+                        delay = backoff_delay(1, response)
+                        logger.warning(
+                            f"Blocked with {response.status_code}, waiting "
+                            f"{delay:.0f}s before starting a new session"
+                        )
+                        sleep(delay)
                         new_session = True
                         self.session = requests.Session()
                         self.session.headers.update(self.HEADER)

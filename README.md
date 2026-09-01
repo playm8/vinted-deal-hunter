@@ -415,6 +415,29 @@ reverse proxy that authenticates — turn off *Warn when the interface has no
 password* in Configuration. A warning that cannot be silenced is one people
 stop reading.
 
+## 🛟 Robustness
+
+**Backing off instead of hammering.** A rejected request used to be retried
+immediately, which is how a temporary block becomes a lasting one. A 429 now
+waits for as long as Vinted's `Retry-After` header asks, and a 403 waits
+before starting a fresh session, with the delay doubling per attempt up to a
+minute.
+
+**Backups.** The database holds every setting, query and price reference in a
+single file. A copy is written at each start through SQLite's own backup API,
+so a backup taken while the application is writing is still a valid database.
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `backup_enabled` | `True` | Write a backup at startup |
+| `backup_directory` | `./data/backups` | Where backups are written |
+| `backup_keep` | `7` | How many to retain |
+
+**A real web server.** The interface is served by waitress rather than Flask's
+development server, which announced at every start that it was not meant for
+production. A missing dependency falls back to Flask rather than costing the
+interface.
+
 ## 🧪 Tests
 
 ```bash

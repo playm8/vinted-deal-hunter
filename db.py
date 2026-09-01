@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from traceback import print_exc
-from time import time
+from time import strftime, time
 
 DB_PATH = "./data/vinted_notifications.db"
 
@@ -914,3 +914,49 @@ def get_logged_item(item_id):
     finally:
         if conn:
             conn.close()
+
+
+def backup_database(directory, keep_last):
+    """
+    Write a consistent copy of the database, keeping the last few.
+
+    SQLite's own backup API is used rather than copying the file, so a backup
+    taken while the application is writing is still a valid database.
+
+    Args:
+        directory (str): Where to write backups.
+        keep_last (int): How many backups to retain.
+
+    Returns:
+        str | None: The path written, or None on failure.
+    """
+    source = None
+    target = None
+    try:
+        os.makedirs(directory, exist_ok=True)
+        stamp = strftime("%Y%m%d-%H%M%S")
+        path = os.path.join(directory, f"vinted_notifications-{stamp}.db")
+        source = sqlite3.connect(DB_PATH)
+        target = sqlite3.connect(path)
+        source.backup(target)
+        target.close()
+        target = None
+
+        backups = sorted(
+            f for f in os.listdir(directory)
+            if f.startswith("vinted_notifications-") and f.endswith(".db")
+        )
+        for stale in backups[: max(len(backups) - keep_last, 0)]:
+            try:
+                os.remove(os.path.join(directory, stale))
+            except OSError:
+                pass
+        return path
+    except Exception:
+        print_exc()
+        return None
+    finally:
+        if source:
+            source.close()
+        if target:
+            target.close()
