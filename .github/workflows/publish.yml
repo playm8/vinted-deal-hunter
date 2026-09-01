@@ -1,0 +1,67 @@
+# Publishes the image on a release.
+#
+# GHCR rather than Docker Hub: the upstream workflow authenticated with
+# DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, secrets a fork does not inherit, so
+# it could only ever fail here. GHCR authenticates with the GITHUB_TOKEN that
+# Actions provides on its own — nothing to create, and the image follows the
+# repository it is built from.
+name: Publish image on release
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  push-image:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Registry login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            # the release tag, e.g. 1.0.5.17
+            type=raw,value=${{ github.event.release.tag_name }},enable=${{ github.event_name == 'release' }}
+            type=raw,value=latest
+            # a sha tag, so a build can always be traced back
+            type=sha
+          labels: |
+            org.opencontainers.image.title=vinted-deal-hunter
+            org.opencontainers.image.description=Vinted notifications with market price references and deal scoring
+            org.opencontainers.image.version=${{ github.event.release.tag_name }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build & Push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

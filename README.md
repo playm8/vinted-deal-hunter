@@ -186,6 +186,9 @@ Each new item costs one extra catalog request, cached per
    cd vinted-deal-hunter
    ```
 
+   Or pull a released image instead of building:
+   `ghcr.io/playm8/vinted-deal-hunter:latest`
+
 2. **Build and start the container**
 
    ```bash
