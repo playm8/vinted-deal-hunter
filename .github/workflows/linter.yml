@@ -36,11 +36,8 @@ jobs:
           pip install ruff black pip-audit
 
       # ---- Linting & formatting checks ----
-      # Ruff is still advisory: its remaining findings are addressed next, in
-      # their own commit. Black is enforced from here on.
       - name: Ruff (lint)
         run: ruff check .
-        continue-on-error: true
 
       - name: Black (format check)
         run: black --check .

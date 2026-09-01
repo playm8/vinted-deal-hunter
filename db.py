@@ -1,7 +1,7 @@
 import os
 import sqlite3
-from traceback import print_exc
 from time import strftime, time
+from traceback import print_exc
 
 DB_PATH = "./data/vinted_notifications.db"
 
@@ -18,7 +18,7 @@ def create_or_update_sqlite_db(db_path):
         conn = get_db_connection()
         cursor = conn.cursor()
         # Using the sql script
-        with open(db_path, "r", encoding="utf-8") as sql_file:
+        with open(db_path, encoding="utf-8") as sql_file:
             sql_script = sql_file.read()
             cursor.executescript(sql_script)
 

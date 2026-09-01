@@ -1,11 +1,13 @@
-from flask import Flask, Response
-import threading
-import time
-import db
 import datetime
 import html
-from logger import get_logger
+import threading
+import time
+
 from feedgen.feed import FeedGenerator
+from flask import Flask, Response
+
+import db
+from logger import get_logger
 
 # Get logger for this module
 logger = get_logger(__name__)

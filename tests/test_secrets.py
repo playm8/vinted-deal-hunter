@@ -1,7 +1,8 @@
 """Keeping credentials out of the database and out of the browser."""
 
-import db
 import pytest
+
+import db
 
 
 def test_environment_wins_over_the_database(database, monkeypatch):

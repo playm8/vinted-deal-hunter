@@ -1,14 +1,16 @@
+import re
+from datetime import datetime, timezone
+from datetime import time as dtime
+from html import escape
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
+import requests
+
 import db
 import price_reference
-from translations import translate
-import re
-import requests
-from pyVintedVN import Vinted, requester
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-import statistics
-from datetime import datetime, time as dtime, timezone
-from html import escape
 from logger import get_logger
+from pyVintedVN import Vinted, requester
+from translations import translate
 
 # Get logger for this module
 logger = get_logger(__name__)

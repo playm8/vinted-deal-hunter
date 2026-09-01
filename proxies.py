@@ -1,9 +1,11 @@
-import random
-import requests
-import time
-from requests.exceptions import RequestException
 import concurrent.futures
+import random
+import time
 from typing import List, Optional
+
+import requests
+from requests.exceptions import RequestException
+
 from logger import get_logger
 
 # Get logger for this module
@@ -203,8 +205,9 @@ def check_proxy(proxy: str) -> bool:
         session = requests.Session()
 
         # Import db here to avoid circular imports
-        import db
         import json
+
+        import db
 
         # Get user agents and default headers from the database
         user_agents_json = db.get_parameter("user_agents")

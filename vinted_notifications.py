@@ -1,8 +1,10 @@
 import multiprocessing
-import time
 import os
-import db
+import time
+
 from apscheduler.schedulers.background import BackgroundScheduler
+
+import db
 from logger import get_logger
 
 # Get logger for this module
@@ -186,9 +188,9 @@ def monitor_processes(items_queue, telegram_queue, rss_queue):
 def plugin_checker():
     # Get telegram and rss enable status
     telegram_enabled = db.get_parameter("telegram_enabled")
-    logger.info("Telegram enabled: {}".format(telegram_enabled))
+    logger.info(f"Telegram enabled: {telegram_enabled}")
     rss_enabled = db.get_parameter("rss_enabled")
-    logger.info("RSS enabled: {}".format(rss_enabled))
+    logger.info(f"RSS enabled: {rss_enabled}")
 
     # Reset process status at startup
     db.set_parameter("telegram_process_running", telegram_enabled)
