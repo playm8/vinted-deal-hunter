@@ -39,3 +39,42 @@ def test_caps_the_number_of_keywords():
         "veste bomber matelassee reversible capuche amovible", "Zara", "M"
     )
     assert len(keywords) <= pr.MAX_KEYWORDS
+
+
+def test_a_split_model_reference_survives():
+    # "TD-3" becomes a two-letter word and a single digit, both under a length
+    # threshold. Dropping them left "decksaver", which priced a synthesiser
+    # against plastic covers.
+    keywords = pr.extract_keywords("TD-3 AM Behringer + Decksaver", "Behringer", "")
+    assert "td" in keywords and "3" in keywords
+
+
+def test_a_lone_digit_after_a_word_is_part_of_the_model():
+    assert "1" in pr.extract_keywords("Softube Console 1 Mk III", "Softube", "")
+
+
+def test_a_stray_digit_on_its_own_is_still_ignored():
+    # Nothing precedes it, so it identifies no model.
+    assert "2" not in pr.extract_keywords("2 pulls", "Zara", "")
+
+
+def test_a_size_in_the_title_is_never_taken_for_a_model():
+    assert "1" not in pr.extract_keywords("Robe portefeuille 1", "Zara", "1")
+
+
+def test_a_model_number_outranks_generic_words():
+    # The budget is four words and the model sits last in the title.
+    keywords = pr.extract_keywords(
+        "Equalizzatore grafico Behringer ultra curve DSP 8000", "Behringer", ""
+    )
+    assert "dsp" in keywords and "8000" in keywords
+
+
+def test_word_order_follows_the_title_after_ranking():
+    keywords = pr.extract_keywords(
+        "Equalizzatore grafico Behringer ultra curve DSP 8000", "Behringer", ""
+    )
+    assert keywords == sorted(
+        keywords,
+        key=lambda word: "equalizzatore grafico ultra curve dsp 8000".index(word),
+    )
